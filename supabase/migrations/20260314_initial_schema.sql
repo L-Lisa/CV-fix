@@ -1,6 +1,7 @@
 -- ============================================================
 -- CV Builder – Initial Schema
 -- Created: 2026-03-14
+-- Order: profiles → coach_links → cvs → cv_* → cv_comments → triggers
 -- ============================================================
 
 -- ─── PROFILES ────────────────────────────────────────────────
@@ -26,6 +27,34 @@ create policy "Users can update own profile"
 create policy "Users can insert own profile"
   on profiles for insert
   with check (auth.uid() = id);
+
+-- ─── COACH_LINKS (must exist before cvs RLS policies) ────────
+
+create table if not exists coach_links (
+  id          uuid primary key default gen_random_uuid(),
+  coach_id    uuid not null references profiles(id) on delete cascade,
+  user_id     uuid not null references profiles(id) on delete cascade,
+  created_at  timestamptz not null default now(),
+  unique (coach_id, user_id)
+);
+
+alter table coach_links enable row level security;
+
+create policy "Coaches can read own links"
+  on coach_links for select
+  using (auth.uid() = coach_id);
+
+create policy "Coaches can create links"
+  on coach_links for insert
+  with check (auth.uid() = coach_id);
+
+create policy "Coaches can delete own links"
+  on coach_links for delete
+  using (auth.uid() = coach_id);
+
+create policy "Users can read links where they are the participant"
+  on coach_links for select
+  using (auth.uid() = user_id);
 
 -- ─── CVS ─────────────────────────────────────────────────────
 
@@ -444,34 +473,6 @@ create policy "Coaches can update linked participant other sections"
       where cvs.id = cv_id and coach_links.coach_id = auth.uid()
     )
   );
-
--- ─── COACH_LINKS ─────────────────────────────────────────────
-
-create table if not exists coach_links (
-  id          uuid primary key default gen_random_uuid(),
-  coach_id    uuid not null references profiles(id) on delete cascade,
-  user_id     uuid not null references profiles(id) on delete cascade,
-  created_at  timestamptz not null default now(),
-  unique (coach_id, user_id)
-);
-
-alter table coach_links enable row level security;
-
-create policy "Coaches can read own links"
-  on coach_links for select
-  using (auth.uid() = coach_id);
-
-create policy "Coaches can create links"
-  on coach_links for insert
-  with check (auth.uid() = coach_id);
-
-create policy "Coaches can delete own links"
-  on coach_links for delete
-  using (auth.uid() = coach_id);
-
-create policy "Users can read links where they are the participant"
-  on coach_links for select
-  using (auth.uid() = user_id);
 
 -- ─── CV_COMMENTS ─────────────────────────────────────────────
 
