@@ -162,12 +162,9 @@ export function validateCV(data: FullCV): ATSResult {
     }
   })
 
-  // Unprofessional email (simple heuristics)
+  // Unprofessional email (simple heuristics — only flag obvious cases)
   if (pi?.email && isValidEmail(pi.email)) {
     const local = pi.email.split('@')[0].toLowerCase()
-    if (/^\d+$/.test(local) || local.includes('cool') || local.includes('sexy') || local.includes('hotmail') === false && local.length < 3) {
-      // only flag very obvious cases — avoid false positives
-    }
     if (local.includes('123') || /^(test|temp|spam)/i.test(local)) {
       soft.push({
         severity: 'soft',

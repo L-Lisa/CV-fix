@@ -179,7 +179,7 @@ export default function SkillsLanguagesForm({
     ])
 
     const failed = results.find((r) => !r.success)
-    if (failed && !failed.success) {
+    if (failed) {
       setSaveError(failed.error)
       setSubmitting(false)
       return

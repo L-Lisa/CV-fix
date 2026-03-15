@@ -30,11 +30,21 @@ export function formatExpRange(exp: CVExperience, lang: 'sv' | 'en'): string {
   return start && end ? `${start} – ${end}` : start || end
 }
 
-export function formatEduRange(edu: CVEducation, lang: 'sv' | 'en'): string {
+// Year-only range shared by educations and volunteering entries.
+export function formatYearRange(
+  startYear: number | null,
+  endYear: number | null,
+  isCurrent: boolean,
+  lang: 'sv' | 'en'
+): string {
+  if (!startYear) return ''
   const ongoing = lang === 'sv' ? 'pågående' : 'present'
-  if (!edu.start_year) return ''
-  const end = edu.is_current ? ongoing : edu.end_year ? `${edu.end_year}` : ''
-  return end ? `${edu.start_year} – ${end}` : `${edu.start_year}`
+  const end = isCurrent ? ongoing : endYear ? `${endYear}` : ''
+  return end ? `${startYear} – ${end}` : `${startYear}`
+}
+
+export function formatEduRange(edu: CVEducation, lang: 'sv' | 'en'): string {
+  return formatYearRange(edu.start_year, edu.end_year, edu.is_current, lang)
 }
 
 export const EDUCATION_LEVEL_LABELS: Record<string, string> = {

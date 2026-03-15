@@ -10,7 +10,6 @@ import type {
   EducationValues,
   SkillValues,
   LanguageEntryValues,
-  HobbiesValues,
   VolunteeringValues,
   OtherEntryValues,
 } from '@/lib/validation/cv'
@@ -218,14 +217,23 @@ export async function saveSkills(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Inte inloggad' }
 
-  await supabase.from('cv_skills').delete().eq('cv_id', cvId)
+  const { error: deleteError } = await supabase
+    .from('cv_skills')
+    .delete()
+    .eq('cv_id', cvId)
+
+  if (deleteError) {
+    console.error('saveSkills delete failed:', deleteError.message)
+    return { success: false, error: 'Det gick inte att spara. Försök igen.' }
+  }
 
   if (skills.length > 0) {
-    const { error } = await supabase
+    const { error: insertError } = await supabase
       .from('cv_skills')
       .insert(skills.map((s, i) => ({ cv_id: cvId, ...s, sort_order: i })))
-    if (error) {
-      console.error('saveSkills failed:', error.message)
+
+    if (insertError) {
+      console.error('saveSkills insert failed:', insertError.message)
       return { success: false, error: 'Det gick inte att spara. Försök igen.' }
     }
   }
@@ -241,14 +249,23 @@ export async function saveLanguages(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Inte inloggad' }
 
-  await supabase.from('cv_languages').delete().eq('cv_id', cvId)
+  const { error: deleteError } = await supabase
+    .from('cv_languages')
+    .delete()
+    .eq('cv_id', cvId)
+
+  if (deleteError) {
+    console.error('saveLanguages delete failed:', deleteError.message)
+    return { success: false, error: 'Det gick inte att spara. Försök igen.' }
+  }
 
   if (languages.length > 0) {
-    const { error } = await supabase
+    const { error: insertError } = await supabase
       .from('cv_languages')
       .insert(languages.map((l, i) => ({ cv_id: cvId, ...l, sort_order: i })))
-    if (error) {
-      console.error('saveLanguages failed:', error.message)
+
+    if (insertError) {
+      console.error('saveLanguages insert failed:', insertError.message)
       return { success: false, error: 'Det gick inte att spara. Försök igen.' }
     }
   }
@@ -284,14 +301,23 @@ export async function saveVolunteerings(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Inte inloggad' }
 
-  await supabase.from('cv_volunteering').delete().eq('cv_id', cvId)
+  const { error: deleteError } = await supabase
+    .from('cv_volunteering')
+    .delete()
+    .eq('cv_id', cvId)
+
+  if (deleteError) {
+    console.error('saveVolunteerings delete failed:', deleteError.message)
+    return { success: false, error: 'Det gick inte att spara. Försök igen.' }
+  }
 
   if (volunteerings.length > 0) {
-    const { error } = await supabase
+    const { error: insertError } = await supabase
       .from('cv_volunteering')
       .insert(volunteerings.map((v, i) => ({ cv_id: cvId, ...v, sort_order: i })))
-    if (error) {
-      console.error('saveVolunteerings failed:', error.message)
+
+    if (insertError) {
+      console.error('saveVolunteerings insert failed:', insertError.message)
       return { success: false, error: 'Det gick inte att spara. Försök igen.' }
     }
   }
@@ -307,14 +333,23 @@ export async function saveOthers(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Inte inloggad' }
 
-  await supabase.from('cv_other').delete().eq('cv_id', cvId)
+  const { error: deleteError } = await supabase
+    .from('cv_other')
+    .delete()
+    .eq('cv_id', cvId)
+
+  if (deleteError) {
+    console.error('saveOthers delete failed:', deleteError.message)
+    return { success: false, error: 'Det gick inte att spara. Försök igen.' }
+  }
 
   if (others.length > 0) {
-    const { error } = await supabase
+    const { error: insertError } = await supabase
       .from('cv_other')
       .insert(others.map((o, i) => ({ cv_id: cvId, ...o, sort_order: i })))
-    if (error) {
-      console.error('saveOthers failed:', error.message)
+
+    if (insertError) {
+      console.error('saveOthers insert failed:', insertError.message)
       return { success: false, error: 'Det gick inte att spara. Försök igen.' }
     }
   }

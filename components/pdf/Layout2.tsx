@@ -6,6 +6,7 @@ import type { FullCV } from '@/types'
 import {
   formatExpRange,
   formatEduRange,
+  formatYearRange,
   EDUCATION_LEVEL_LABELS,
   LANGUAGE_LEVEL_LABELS,
   EXP_TYPE_LABELS,
@@ -253,7 +254,7 @@ export default function Layout2({ data }: Props) {
                   <View style={styles.entryRow}>
                     <Text style={styles.entryTitle}>{v.role}</Text>
                     <Text style={styles.entryDate}>
-                      {formatEduRange({ start_year: v.start_year, end_year: v.end_year, is_current: v.is_current } as Parameters<typeof formatEduRange>[0], lang)}
+                      {formatYearRange(v.start_year, v.end_year, v.is_current, lang)}
                     </Text>
                   </View>
                   <Text style={styles.entrySubtitle}>{v.organisation}</Text>

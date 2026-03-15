@@ -61,19 +61,23 @@ export async function GET(
     return new NextResponse('PDF generation failed', { status: 500 })
   }
 
-  // Mark the CV as exported (non-blocking)
+  // Mark the CV as exported (non-blocking — failure is non-critical)
   supabase
     .from('cvs')
     .update({ has_been_exported: true })
     .eq('id', params.id)
-    .then(() => {})
+    .then(({ error }) => {
+      if (error) console.error('has_been_exported update failed:', error.message)
+    })
 
-  const filename = `${fullCV.cv.title.replace(/[^a-zA-Z0-9åäöÅÄÖ\s-]/g, '').trim() || 'cv'}.pdf`
+  const rawName = fullCV.cv.title.replace(/[^a-zA-Z0-9åäöÅÄÖ\s-]/g, '').trim() || 'cv'
+  const filename = `${rawName}.pdf`
+  const encodedFilename = encodeURIComponent(filename)
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Disposition': `attachment; filename="${filename}"; filename*=UTF-8''${encodedFilename}`,
       'Content-Length': String(buffer.length),
     },
   })
