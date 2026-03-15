@@ -22,6 +22,21 @@ function countSentences(text: string): number {
   return text.split(/[.!?]+(?:\s|$)/).filter((s) => s.trim().length > 0).length
 }
 
+// Returns the experience end date as total months from year 0.
+// Uses month 1 as a conservative fallback when month is unknown.
+function toEndMonths(exp: { end_year: number; end_month: number | null }): number {
+  return exp.end_year * 12 + (exp.end_month ?? 1)
+}
+
+function toStartMonths(exp: { start_year: number; start_month: number | null }): number {
+  return exp.start_year * 12 + (exp.start_month ?? 1)
+}
+
+function hasNoBullets(text: string): boolean {
+  // Bullet-like: newline, or a line starting with -, •, *, or a digit followed by .
+  return !/(\n|^\s*[-•*]|\d+\.)/m.test(text)
+}
+
 export interface ATSResult {
   hard: ATSError[]
   soft: ATSError[]
@@ -133,7 +148,7 @@ export function validateCV(data: FullCV): ATSResult {
     }
   }
 
-  // Experience entries without description
+  // Experience entries without description, or with a long unpunctuated block
   experiences.forEach((exp, i) => {
     if (!exp.description?.trim()) {
       soft.push({
@@ -141,8 +156,37 @@ export function validateCV(data: FullCV): ATSResult {
         field: `experiences[${i}].description`,
         message: `Erfarenhet ${i + 1} (${exp.job_title ?? 'okänd'}) saknar beskrivning`,
       })
+    } else if (exp.description.trim().length > 150 && hasNoBullets(exp.description)) {
+      soft.push({
+        severity: 'soft',
+        field: `experiences[${i}].description`,
+        message: `Erfarenhet ${i + 1} (${exp.job_title ?? 'okänd'}) är en lång löptext — överväg punktlista`,
+      })
     }
   })
+
+  // Chronological gaps > 12 months between experience entries
+  const datedExps = experiences
+    .filter((e) => e.start_year !== null)
+    .map((e) => ({ ...e, start_year: e.start_year! }))
+    .sort((a, b) => toStartMonths(a) - toStartMonths(b))
+
+  for (let i = 0; i < datedExps.length - 1; i++) {
+    const current = datedExps[i]
+    const next = datedExps[i + 1]
+
+    // Only check gap after a finished role (not current)
+    if (current.is_current || !current.end_year) continue
+
+    const gapMonths = toStartMonths(next) - toEndMonths({ end_year: current.end_year, end_month: current.end_month })
+    if (gapMonths > 12) {
+      soft.push({
+        severity: 'soft',
+        field: null,
+        message: `Gap på över ett år i arbetslivserfarenheten (${current.end_year}–${next.start_year}) — överväg att förklara`,
+      })
+    }
+  }
 
   // Education without level or end year
   educations.forEach((edu, i) => {
