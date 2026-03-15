@@ -8,21 +8,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { CVLanguage } from '@/types'
 
-const DIRECTIONS = [
-  'IT/Tech',
-  'Vård/Omsorg',
-  'Handel/Service',
-  'Transport/Logistik',
-  'Kontor/Admin',
-  'Ledarskap',
-  'Student/Ungdom',
-  'Annat',
-] as const
-
 export default function NewCVPage() {
   const router = useRouter()
   const [language, setLanguage] = useState<CVLanguage>('sv')
-  const [direction, setDirection] = useState('')
   const [title, setTitle] = useState('Mitt CV')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -49,7 +37,7 @@ export default function NewCVPage() {
         Skapa nytt CV
       </h1>
       <p className="text-gray-500 mb-8">
-        Välj språk och inriktning — du kan ändra det senare.
+        Välj språk — du kan ändra det senare.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -69,30 +57,6 @@ export default function NewCVPage() {
                 }`}
               >
                 {lang === 'sv' ? 'Svenska' : 'English'}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Career direction (optional) */}
-        <div>
-          <Label className="mb-2 block">
-            Yrkesinriktning{' '}
-            <span className="text-gray-400 font-normal">(valfritt)</span>
-          </Label>
-          <div className="grid grid-cols-2 gap-2">
-            {DIRECTIONS.map((d) => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => setDirection(direction === d ? '' : d)}
-                className={`py-2 px-3 rounded-lg border text-sm transition-colors text-left ${
-                  direction === d
-                    ? 'border-gray-900 bg-gray-100 text-gray-900 font-medium'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-400'
-                }`}
-              >
-                {d}
               </button>
             ))}
           </div>

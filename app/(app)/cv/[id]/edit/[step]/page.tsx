@@ -12,14 +12,20 @@ const STEP_LABELS: Record<ValidStep, string> = {
   5: 'Kunskaper & Färdigheter',
 }
 
+function parseStep(raw: string): ValidStep | null {
+  const n = parseInt(raw, 10)
+  if (isNaN(n)) return null
+  return VALID_STEPS.includes(n as ValidStep) ? (n as ValidStep) : null
+}
+
 export default async function CVStepPage({
   params,
 }: {
   params: { id: string; step: string }
 }) {
-  const stepNum = parseInt(params.step, 10) as ValidStep
+  const stepNum = parseStep(params.step)
 
-  if (!VALID_STEPS.includes(stepNum)) {
+  if (stepNum === null) {
     redirect(`/cv/${params.id}/edit/1`)
   }
 

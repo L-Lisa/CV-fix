@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { listCVs } from '@/lib/actions/cv'
+import { listCVs } from '@/lib/queries/cv'
 import { Button } from '@/components/ui/button'
 import type { CV } from '@/types'
 
