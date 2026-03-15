@@ -4,7 +4,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import type { CVLanguage } from '@/types'
-import type { PersonalInfoValues, ExperienceValues } from '@/lib/validation/cv'
+import type { PersonalInfoValues, ExperienceValues, EducationValues } from '@/lib/validation/cv'
 
 export type CVActionResult =
   | { success: true; cvId: string }
@@ -113,6 +113,54 @@ export async function saveExperiences(
 
     if (insertError) {
       console.error('saveExperiences insert failed:', insertError.message)
+      return { success: false, error: 'Det gick inte att spara. Försök igen.' }
+    }
+  }
+
+  await supabase
+    .from('cvs')
+    .update({ updated_at: new Date().toISOString() })
+    .eq('id', cvId)
+    .eq('user_id', user.id)
+
+  return { success: true }
+}
+
+export async function saveEducations(
+  cvId: string,
+  educations: EducationValues[]
+): Promise<SaveResult> {
+  const supabase = createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return { success: false, error: 'Inte inloggad' }
+
+  const { error: deleteError } = await supabase
+    .from('cv_educations')
+    .delete()
+    .eq('cv_id', cvId)
+
+  if (deleteError) {
+    console.error('saveEducations delete failed:', deleteError.message)
+    return { success: false, error: 'Det gick inte att spara. Försök igen.' }
+  }
+
+  if (educations.length > 0) {
+    const rows = educations.map((edu, i) => ({
+      cv_id: cvId,
+      ...edu,
+      sort_order: i,
+    }))
+
+    const { error: insertError } = await supabase
+      .from('cv_educations')
+      .insert(rows)
+
+    if (insertError) {
+      console.error('saveEducations insert failed:', insertError.message)
       return { success: false, error: 'Det gick inte att spara. Försök igen.' }
     }
   }
