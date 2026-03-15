@@ -20,6 +20,21 @@ export async function listCVs(): Promise<CV[]> {
   return (data ?? []) as CV[]
 }
 
+export async function getProfileText(
+  cvId: string
+): Promise<string | null> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('cv_profile')
+    .select('summary')
+    .eq('cv_id', cvId)
+    .single()
+
+  if (error) return null
+  return data?.summary ?? null
+}
+
 export async function getPersonalInfo(
   cvId: string
 ): Promise<CVPersonalInfo | null> {

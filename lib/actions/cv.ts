@@ -46,6 +46,36 @@ export async function createCV(
   return { success: true, cvId: cv.id }
 }
 
+export async function saveProfileText(
+  cvId: string,
+  summary: string
+): Promise<SaveResult> {
+  const supabase = createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return { success: false, error: 'Inte inloggad' }
+
+  const { error } = await supabase
+    .from('cv_profile')
+    .upsert({ cv_id: cvId, summary }, { onConflict: 'cv_id' })
+
+  if (error) {
+    console.error('saveProfileText failed:', error.message)
+    return { success: false, error: 'Det gick inte att spara. Försök igen.' }
+  }
+
+  await supabase
+    .from('cvs')
+    .update({ updated_at: new Date().toISOString() })
+    .eq('id', cvId)
+    .eq('user_id', user.id)
+
+  return { success: true }
+}
+
 export async function savePersonalInfo(
   cvId: string,
   values: PersonalInfoValues
