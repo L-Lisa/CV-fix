@@ -1,3 +1,4 @@
+import { formatDate } from '@/lib/utils/format'
 import type { CVComment } from '@/types'
 
 const SECTION_LABELS: Record<string, string> = {
@@ -10,14 +11,6 @@ const SECTION_LABELS: Record<string, string> = {
   hobbies: 'Intressen',
   volunteering: 'Volontärarbete',
   other: 'Övrigt',
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('sv-SE', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
 }
 
 interface Props {

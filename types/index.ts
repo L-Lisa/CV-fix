@@ -158,6 +158,16 @@ export interface CVComment {
   created_at: string
 }
 
+// ─── Action Results ──────────────────────────────────────────────────────────
+
+export type CVActionResult =
+  | { success: true; cvId: string }
+  | { success: false; error: string }
+
+export type SaveResult =
+  | { success: true }
+  | { success: false; error: string }
+
 // ─── ATS Validation ──────────────────────────────────────────────────────────
 
 export type ATSErrorSeverity = 'hard' | 'soft'

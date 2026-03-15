@@ -3,7 +3,7 @@
 // Mutation server actions only. For reads, use lib/queries/cv.ts.
 
 import { createClient } from '@/lib/supabase/server'
-import type { CVLanguage, CVLayout } from '@/types'
+import type { CVLanguage, CVLayout, CVActionResult, SaveResult } from '@/types'
 import type {
   PersonalInfoValues,
   ExperienceValues,
@@ -14,13 +14,6 @@ import type {
   OtherEntryValues,
 } from '@/lib/validation/cv'
 
-export type CVActionResult =
-  | { success: true; cvId: string }
-  | { success: false; error: string }
-
-export type SaveResult =
-  | { success: true }
-  | { success: false; error: string }
 
 export async function updateCVSettings(
   cvId: string,

@@ -89,24 +89,26 @@ export async function getEducations(cvId: string): Promise<CVEducation[]> {
 export async function getSkills(cvId: string): Promise<CVSkill[]> {
   const supabase = createClient()
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('cv_skills')
     .select('*')
     .eq('cv_id', cvId)
     .order('sort_order', { ascending: true })
 
+  if (error) return []
   return (data ?? []) as CVSkill[]
 }
 
 export async function getLanguageEntries(cvId: string): Promise<CVLanguageEntry[]> {
   const supabase = createClient()
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('cv_languages')
     .select('*')
     .eq('cv_id', cvId)
     .order('sort_order', { ascending: true })
 
+  if (error) return []
   return (data ?? []) as CVLanguageEntry[]
 }
 
@@ -126,24 +128,26 @@ export async function getHobbies(cvId: string): Promise<CVHobbies | null> {
 export async function getVolunteerings(cvId: string): Promise<CVVolunteering[]> {
   const supabase = createClient()
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('cv_volunteering')
     .select('*')
     .eq('cv_id', cvId)
     .order('sort_order', { ascending: true })
 
+  if (error) return []
   return (data ?? []) as CVVolunteering[]
 }
 
 export async function getOthers(cvId: string): Promise<CVOther[]> {
   const supabase = createClient()
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('cv_other')
     .select('*')
     .eq('cv_id', cvId)
     .order('sort_order', { ascending: true })
 
+  if (error) return []
   return (data ?? []) as CVOther[]
 }
 

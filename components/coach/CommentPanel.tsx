@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { addComment, resolveComment } from '@/lib/actions/coach'
+import { formatDate } from '@/lib/utils/format'
 import { Button } from '@/components/ui/button'
 import type { CVComment } from '@/types'
 
@@ -12,14 +13,6 @@ interface Props {
   itemId: string | null
   comments: CVComment[]
   label: string
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('sv-SE', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
 }
 
 export default function CommentPanel({

@@ -2,16 +2,9 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getLinkedParticipants, getParticipantCVs } from '@/lib/queries/coach'
+import { formatDate } from '@/lib/utils/format'
 import { Button } from '@/components/ui/button'
 import type { CV, Profile } from '@/types'
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('sv-SE', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
 
 function ParticipantCard({
   participant,
@@ -101,9 +94,7 @@ export default async function CoachDashboardPage() {
           Mina deltagare
         </h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          {participants.length}{' '}
-          {participants.length === 1 ? 'deltagare' : 'deltagare'} kopplade till
-          dig
+          {participants.length} deltagare kopplade till dig
         </p>
       </div>
 

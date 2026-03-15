@@ -2,16 +2,9 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getParticipantCVs } from '@/lib/queries/coach'
+import { formatDate } from '@/lib/utils/format'
 import { Button } from '@/components/ui/button'
 import type { CV } from '@/types'
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('sv-SE', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
 
 function CVCard({ cv }: { cv: CV }) {
   return (

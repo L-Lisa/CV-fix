@@ -4,7 +4,12 @@ import { createClient } from '@/lib/supabase/server'
 import { getFullCV } from '@/lib/queries/cv'
 import { getCommentsForCV } from '@/lib/queries/coach'
 import CommentPanel from '@/components/coach/CommentPanel'
-import { EDUCATION_LEVEL_LABELS, LANGUAGE_LEVEL_LABELS } from '@/components/pdf/shared'
+import {
+  EDUCATION_LEVEL_LABELS,
+  LANGUAGE_LEVEL_LABELS,
+  formatYearRange,
+  formatExpRange,
+} from '@/components/pdf/shared'
 import type { CVComment } from '@/types'
 
 function sectionComments(
@@ -15,33 +20,6 @@ function sectionComments(
   return comments.filter(
     (c) => c.section_type === sectionType && c.item_id === itemId
   )
-}
-
-function formatYearRange(
-  startYear: number | null,
-  endYear: number | null,
-  isCurrent: boolean
-): string {
-  if (!startYear) return ''
-  const end = isCurrent ? 'pågående' : endYear ? `${endYear}` : ''
-  return end ? `${startYear} – ${end}` : `${startYear}`
-}
-
-function formatExpRange(
-  startMonth: number | null,
-  startYear: number | null,
-  endMonth: number | null,
-  endYear: number | null,
-  isCurrent: boolean
-): string {
-  const MONTHS = ['', 'jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
-  const start = startYear
-    ? startMonth ? `${MONTHS[startMonth]} ${startYear}` : `${startYear}`
-    : ''
-  const end = isCurrent
-    ? 'pågående'
-    : endYear ? endMonth ? `${MONTHS[endMonth]} ${endYear}` : `${endYear}` : ''
-  return start && end ? `${start} – ${end}` : start || end
 }
 
 export default async function CoachCVPage({
@@ -161,7 +139,7 @@ export default async function CoachCVPage({
                       </p>
                     </div>
                     <p className="text-sm text-gray-400 shrink-0">
-                      {formatExpRange(exp.start_month, exp.start_year, exp.end_month, exp.end_year, exp.is_current)}
+                      {formatExpRange(exp, 'sv')}
                     </p>
                   </div>
                   {exp.description && (
@@ -201,7 +179,7 @@ export default async function CoachCVPage({
                         </p>
                       </div>
                       <p className="text-sm text-gray-400 shrink-0">
-                        {formatYearRange(edu.start_year, edu.end_year, edu.is_current)}
+                        {formatYearRange(edu.start_year, edu.end_year, edu.is_current, 'sv')}
                       </p>
                     </div>
                     {edu.description && (

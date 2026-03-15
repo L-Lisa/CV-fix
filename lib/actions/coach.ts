@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import type { SaveResult } from '@/lib/actions/cv'
+import type { SaveResult } from '@/types'
 
 export async function addComment(
   cvId: string,
