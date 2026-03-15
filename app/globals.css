@@ -57,3 +57,24 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ── AI shimmer ─────────────────────────────────────────────────────────── */
+
+@keyframes ai-shimmer-move {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.ai-shimmer {
+  transition: box-shadow 0.3s ease, background 0.3s ease;
+}
+
+.ai-shimmer.ai-active {
+  box-shadow:
+    0 0 0 1.5px #a855f7,
+    0 0 12px 2px rgba(168, 85, 247, 0.15);
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 50%, #faf5ff 100%);
+  background-size: 200% 200%;
+  animation: ai-shimmer-move 3s ease infinite;
+}
