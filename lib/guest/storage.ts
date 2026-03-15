@@ -112,6 +112,7 @@ export function assembleGuestFullCV(guest: GuestCV): FullCV {
     : null
 
   const experiences: CVExperience[] = guest.experiences.map((e, i) => ({
+    ...e,
     id: `exp-${i}`,
     cv_id: cvId,
     sort_order: i,
@@ -121,17 +122,16 @@ export function assembleGuestFullCV(guest: GuestCV): FullCV {
     description: e.description ?? null,
     end_month: e.end_month,
     end_year: e.end_year,
-    ...e,
   }))
 
   const educations: CVEducation[] = guest.educations.map((e, i) => ({
+    ...e,
     id: `edu-${i}`,
     cv_id: cvId,
     sort_order: i,
     description: e.description ?? null,
     end_year: e.end_year,
     level: e.level,
-    ...e,
   }))
 
   const skills: CVSkill[] = guest.skills.map((s, i) => ({

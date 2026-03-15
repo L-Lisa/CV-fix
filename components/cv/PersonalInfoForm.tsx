@@ -17,6 +17,7 @@ interface Props {
   initialData: CVPersonalInfo | null
   onSave?: (values: PersonalInfoValues) => Promise<SaveResult>
   nextHref?: string
+  onAfterSave?: () => void
 }
 
 function FieldError({ message }: { message?: string }) {
@@ -28,7 +29,7 @@ function FieldError({ message }: { message?: string }) {
   )
 }
 
-export default function PersonalInfoForm({ cvId, initialData, onSave, nextHref }: Props) {
+export default function PersonalInfoForm({ cvId, initialData, onSave, nextHref, onAfterSave }: Props) {
   const router = useRouter()
   const [saveError, setSaveError] = useState('')
 
@@ -65,7 +66,11 @@ export default function PersonalInfoForm({ cvId, initialData, onSave, nextHref }
       return
     }
 
-    router.push(nextHref ?? `/cv/${cvId}/edit/2`)
+    if (onAfterSave) {
+      onAfterSave()
+    } else {
+      router.push(nextHref ?? `/cv/${cvId}/edit/2`)
+    }
   }
 
   return (

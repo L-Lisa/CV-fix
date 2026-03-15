@@ -55,7 +55,7 @@ export async function migrateGuestCV(guestCV: GuestCV): Promise<CVActionResult> 
   }
 
   // 4–8. Array sections — batch inserts
-  const inserts: Promise<unknown>[] = []
+  const inserts: PromiseLike<unknown>[] = []
 
   if (guestCV.experiences.length > 0) {
     inserts.push(

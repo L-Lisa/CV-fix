@@ -3,24 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getFullCV } from '@/lib/queries/cv'
 import { getCommentsForCV } from '@/lib/queries/coach'
-import CommentPanel from '@/components/coach/CommentPanel'
-import {
-  EDUCATION_LEVEL_LABELS,
-  LANGUAGE_LEVEL_LABELS,
-  formatYearRange,
-  formatExpRange,
-} from '@/components/pdf/shared'
-import type { CVComment } from '@/types'
-
-function sectionComments(
-  comments: CVComment[],
-  sectionType: string,
-  itemId: string | null = null
-): CVComment[] {
-  return comments.filter(
-    (c) => c.section_type === sectionType && c.item_id === itemId
-  )
-}
+import CoachCVPageClient from '@/components/coach/CoachCVPageClient'
 
 export default async function CoachCVPage({
   params,
@@ -61,7 +44,7 @@ export default async function CoachCVPage({
 
   if (!link) notFound()
 
-  const { personalInfo: pi, profile, experiences, educations, skills, languages, hobbies, volunteering, other } = fullCV
+  const { personalInfo: pi } = fullCV
   const fullName = [pi?.first_name, pi?.last_name].filter(Boolean).join(' ')
 
   return (
@@ -82,216 +65,11 @@ export default async function CoachCVPage({
         </p>
       </div>
 
-      <div className="space-y-6">
-        {/* Personal info */}
-        <section className="bg-white border border-gray-200 rounded-lg p-5">
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-            Kontaktuppgifter
-          </h2>
-          {fullName && <p className="font-semibold text-gray-900">{fullName}</p>}
-          {pi?.headline && <p className="text-sm text-gray-600">{pi.headline}</p>}
-          <div className="mt-2 space-y-0.5 text-sm text-gray-600">
-            {pi?.email && <p>{pi.email}</p>}
-            {pi?.phone && <p>{pi.phone}</p>}
-            {pi?.city && <p>{pi.city}{pi.region ? `, ${pi.region}` : ''}</p>}
-            {pi?.linkedin_url && <p>{pi.linkedin_url}</p>}
-          </div>
-          <CommentPanel
-            cvId={params.id}
-            sectionType="personal_info"
-            itemId={null}
-            comments={sectionComments(comments, 'personal_info')}
-            label="Kontaktuppgifter"
-          />
-        </section>
-
-        {/* Profile */}
-        {profile?.summary && (
-          <section className="bg-white border border-gray-200 rounded-lg p-5">
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-              Profil
-            </h2>
-            <p className="text-sm text-gray-700 leading-relaxed">{profile.summary}</p>
-            <CommentPanel
-              cvId={params.id}
-              sectionType="profile"
-              itemId={null}
-              comments={sectionComments(comments, 'profile')}
-              label="Profil"
-            />
-          </section>
-        )}
-
-        {/* Experiences */}
-        {experiences.length > 0 && (
-          <section className="bg-white border border-gray-200 rounded-lg p-5">
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">
-              Arbetslivserfarenhet
-            </h2>
-            <div className="space-y-5">
-              {experiences.map((exp) => (
-                <div key={exp.id} className="border-b border-gray-100 last:border-0 pb-4 last:pb-0">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="font-medium text-gray-900">{exp.job_title}</p>
-                      <p className="text-sm text-gray-600">
-                        {[exp.employer, exp.city].filter(Boolean).join(' · ')}
-                      </p>
-                    </div>
-                    <p className="text-sm text-gray-400 shrink-0">
-                      {formatExpRange(exp, 'sv')}
-                    </p>
-                  </div>
-                  {exp.description && (
-                    <p className="text-sm text-gray-600 mt-1.5 leading-relaxed">
-                      {exp.description}
-                    </p>
-                  )}
-                  <CommentPanel
-                    cvId={params.id}
-                    sectionType="experience"
-                    itemId={exp.id}
-                    comments={sectionComments(comments, 'experience', exp.id)}
-                    label={exp.job_title ?? 'Erfarenhet'}
-                  />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Educations */}
-        {educations.length > 0 && (
-          <section className="bg-white border border-gray-200 rounded-lg p-5">
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">
-              Utbildning
-            </h2>
-            <div className="space-y-5">
-              {educations.map((edu) => {
-                const levelLabel = edu.level ? EDUCATION_LEVEL_LABELS[edu.level] : null
-                return (
-                  <div key={edu.id} className="border-b border-gray-100 last:border-0 pb-4 last:pb-0">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="font-medium text-gray-900">{edu.program}</p>
-                        <p className="text-sm text-gray-600">
-                          {[edu.institution, levelLabel].filter(Boolean).join(' · ')}
-                        </p>
-                      </div>
-                      <p className="text-sm text-gray-400 shrink-0">
-                        {formatYearRange(edu.start_year, edu.end_year, edu.is_current, 'sv')}
-                      </p>
-                    </div>
-                    {edu.description && (
-                      <p className="text-sm text-gray-600 mt-1.5">{edu.description}</p>
-                    )}
-                    <CommentPanel
-                      cvId={params.id}
-                      sectionType="education"
-                      itemId={edu.id}
-                      comments={sectionComments(comments, 'education', edu.id)}
-                      label={edu.program ?? 'Utbildning'}
-                    />
-                  </div>
-                )
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* Skills */}
-        {skills.length > 0 && (
-          <section className="bg-white border border-gray-200 rounded-lg p-5">
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-              Kunskaper
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              {skills.map((s) => (
-                <span
-                  key={s.id}
-                  className="text-sm bg-gray-100 text-gray-700 rounded px-2 py-0.5"
-                >
-                  {s.name}{s.level ? ` (${s.level}/5)` : ''}
-                </span>
-              ))}
-            </div>
-            <CommentPanel
-              cvId={params.id}
-              sectionType="skills"
-              itemId={null}
-              comments={sectionComments(comments, 'skills')}
-              label="Kunskaper"
-            />
-          </section>
-        )}
-
-        {/* Languages */}
-        {languages.length > 0 && (
-          <section className="bg-white border border-gray-200 rounded-lg p-5">
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-              Språk
-            </h2>
-            <div className="space-y-1">
-              {languages.map((l) => {
-                const levelLabel = l.level ? LANGUAGE_LEVEL_LABELS[l.level]?.sv : null
-                return (
-                  <p key={l.id} className="text-sm text-gray-700">
-                    {l.language}{levelLabel ? ` – ${levelLabel}` : ''}
-                  </p>
-                )
-              })}
-            </div>
-            <CommentPanel
-              cvId={params.id}
-              sectionType="languages"
-              itemId={null}
-              comments={sectionComments(comments, 'languages')}
-              label="Språk"
-            />
-          </section>
-        )}
-
-        {/* Hobbies */}
-        {hobbies?.text && (
-          <section className="bg-white border border-gray-200 rounded-lg p-5">
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-              Intressen
-            </h2>
-            <p className="text-sm text-gray-700">{hobbies.text}</p>
-            <CommentPanel
-              cvId={params.id}
-              sectionType="hobbies"
-              itemId={null}
-              comments={sectionComments(comments, 'hobbies')}
-              label="Intressen"
-            />
-          </section>
-        )}
-
-        {/* Other */}
-        {other.length > 0 && (
-          <section className="bg-white border border-gray-200 rounded-lg p-5">
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-              Övrigt
-            </h2>
-            <div className="space-y-1">
-              {other.map((o) => (
-                <p key={o.id} className="text-sm text-gray-700">
-                  {o.label ? <span className="font-medium">{o.label}: </span> : null}
-                  {o.text}
-                </p>
-              ))}
-            </div>
-            <CommentPanel
-              cvId={params.id}
-              sectionType="other"
-              itemId={null}
-              comments={sectionComments(comments, 'other')}
-              label="Övrigt"
-            />
-          </section>
-        )}
-      </div>
+      <CoachCVPageClient
+        cvId={params.id}
+        fullCV={fullCV}
+        comments={comments}
+      />
     </div>
   )
 }

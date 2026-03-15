@@ -4,7 +4,7 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { experiencesSchema, type ExperiencesValues } from '@/lib/validation/cv'
+import { experiencesSchema, type ExperiencesValues, type ExperienceValues } from '@/lib/validation/cv'
 import { saveExperiences } from '@/lib/actions/cv'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,6 +18,7 @@ interface Props {
   onSave?: (values: ExperienceValues[]) => Promise<SaveResult>
   nextHref?: string
   prevHref?: string
+  onAfterSave?: () => void
 }
 
 const MONTHS = [
@@ -70,7 +71,7 @@ function FieldError({ message }: { message?: string }) {
   )
 }
 
-export default function ExperienceForm({ cvId, initialData, onSave, nextHref, prevHref }: Props) {
+export default function ExperienceForm({ cvId, initialData, onSave, nextHref, prevHref, onAfterSave }: Props) {
   const router = useRouter()
   const [saveError, setSaveError] = useState('')
 
@@ -118,7 +119,11 @@ export default function ExperienceForm({ cvId, initialData, onSave, nextHref, pr
       return
     }
 
-    router.push(nextHref ?? `/cv/${cvId}/edit/4`)
+    if (onAfterSave) {
+      onAfterSave()
+    } else {
+      router.push(nextHref ?? `/cv/${cvId}/edit/4`)
+    }
   }
 
   return (

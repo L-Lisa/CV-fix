@@ -4,7 +4,7 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { educationsSchema, type EducationsValues } from '@/lib/validation/cv'
+import { educationsSchema, type EducationsValues, type EducationValues } from '@/lib/validation/cv'
 import { saveEducations } from '@/lib/actions/cv'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,6 +18,7 @@ interface Props {
   onSave?: (values: EducationValues[]) => Promise<SaveResult>
   nextHref?: string
   prevHref?: string
+  onAfterSave?: () => void
 }
 
 const EDUCATION_LEVELS = [
@@ -52,7 +53,7 @@ function FieldError({ message }: { message?: string }) {
   )
 }
 
-export default function EducationForm({ cvId, initialData, onSave, nextHref, prevHref }: Props) {
+export default function EducationForm({ cvId, initialData, onSave, nextHref, prevHref, onAfterSave }: Props) {
   const router = useRouter()
   const [saveError, setSaveError] = useState('')
 
@@ -96,7 +97,11 @@ export default function EducationForm({ cvId, initialData, onSave, nextHref, pre
       return
     }
 
-    router.push(nextHref ?? `/cv/${cvId}/edit/5`)
+    if (onAfterSave) {
+      onAfterSave()
+    } else {
+      router.push(nextHref ?? `/cv/${cvId}/edit/5`)
+    }
   }
 
   return (

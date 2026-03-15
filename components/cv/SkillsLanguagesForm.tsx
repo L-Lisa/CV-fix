@@ -38,6 +38,7 @@ interface Props {
   onSave?: (values: Step5Values) => Promise<SaveResult>
   nextHref?: string
   prevHref?: string
+  onAfterSave?: () => void
 }
 
 const SKILL_CATEGORIES = [
@@ -84,6 +85,7 @@ export default function SkillsLanguagesForm({
   onSave,
   nextHref,
   prevHref,
+  onAfterSave,
 }: Props) {
   const router = useRouter()
   const [saveError, setSaveError] = useState('')
@@ -190,7 +192,11 @@ export default function SkillsLanguagesForm({
         setSubmitting(false)
         return
       }
-      router.push(nextHref ?? `/cv/${cvId}/preview`)
+      if (onAfterSave) {
+        onAfterSave()
+      } else {
+        router.push(nextHref ?? `/cv/${cvId}/preview`)
+      }
       return
     }
 

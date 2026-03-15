@@ -16,9 +16,10 @@ interface Props {
   onSave?: (values: ProfileTextValues) => Promise<SaveResult>
   nextHref?: string
   prevHref?: string
+  onAfterSave?: () => void
 }
 
-export default function ProfileTextForm({ cvId, initialSummary, onSave, nextHref, prevHref }: Props) {
+export default function ProfileTextForm({ cvId, initialSummary, onSave, nextHref, prevHref, onAfterSave }: Props) {
   const router = useRouter()
   const [saveError, setSaveError] = useState('')
 
@@ -46,7 +47,11 @@ export default function ProfileTextForm({ cvId, initialSummary, onSave, nextHref
       return
     }
 
-    router.push(nextHref ?? `/cv/${cvId}/edit/3`)
+    if (onAfterSave) {
+      onAfterSave()
+    } else {
+      router.push(nextHref ?? `/cv/${cvId}/edit/3`)
+    }
   }
 
   return (
