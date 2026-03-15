@@ -107,6 +107,25 @@ export default function GuestStepContent({ step }: { step: ValidStep }) {
         <ProfileTextForm
           cvId="guest"
           initialSummary={guestCV.profile}
+          language={guestCV.language}
+          isGuest
+          guestContext={{
+            headline: guestCV.personalInfo?.headline ?? null,
+            experiences: guestCV.experiences.map((e) => ({
+              job_title: e.job_title ?? null,
+              employer: e.employer ?? null,
+              description: e.description ?? null,
+            })),
+            educations: guestCV.educations.map((e) => ({
+              program: e.program ?? null,
+              institution: e.institution ?? null,
+            })),
+            skills: guestCV.skills.map((s) => ({ name: s.name ?? null })),
+            languages: guestCV.languages.map((l) => ({
+              language: l.language ?? null,
+              level: l.level ?? null,
+            })),
+          }}
           onSave={(v: ProfileTextValues) => update('profile', v.summary)}
           nextHref="/cv/guest/3"
           prevHref="/cv/guest/1"
@@ -117,6 +136,8 @@ export default function GuestStepContent({ step }: { step: ValidStep }) {
         <ExperienceForm
           cvId="guest"
           initialData={guestCV.experiences as unknown as CVExperience[]}
+          language={guestCV.language}
+          isGuest
           onSave={(v: ExperienceValues[]) => update('experiences', v)}
           nextHref="/cv/guest/4"
           prevHref="/cv/guest/2"
@@ -145,6 +166,8 @@ export default function GuestStepContent({ step }: { step: ValidStep }) {
           }
           initialVolunteerings={guestCV.volunteerings as unknown as CVVolunteering[]}
           initialOthers={guestCV.others as unknown as CVOther[]}
+          language={guestCV.language}
+          isGuest
           onSave={updateStep5}
           nextHref="/cv/guest/preview"
           prevHref="/cv/guest/4"
