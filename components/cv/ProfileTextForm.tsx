@@ -8,18 +8,27 @@ import { profileTextSchema, type ProfileTextValues } from '@/lib/validation/cv'
 import { saveProfileText } from '@/lib/actions/cv'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import type { SaveResult } from '@/types'
+import type { SaveResult, CVLanguage } from '@/types'
 
 interface Props {
   cvId: string
   initialSummary: string | null
+  language?: CVLanguage
+  isGuest?: boolean
+  guestContext?: {
+    headline: string | null
+    experiences: Array<{ job_title: string | null; employer: string | null; description: string | null }>
+    educations: Array<{ program: string | null; institution: string | null }>
+    skills: Array<{ name: string | null }>
+    languages: Array<{ language: string | null; level: string | null }>
+  }
   onSave?: (values: ProfileTextValues) => Promise<SaveResult>
   nextHref?: string
   prevHref?: string
   onAfterSave?: () => void
 }
 
-export default function ProfileTextForm({ cvId, initialSummary, onSave, nextHref, prevHref, onAfterSave }: Props) {
+export default function ProfileTextForm({ cvId, initialSummary, language = 'sv', isGuest, guestContext, onSave, nextHref, prevHref, onAfterSave }: Props) {
   const router = useRouter()
   const [saveError, setSaveError] = useState('')
 

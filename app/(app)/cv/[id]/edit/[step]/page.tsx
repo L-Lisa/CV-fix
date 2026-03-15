@@ -11,6 +11,7 @@ import {
   getVolunteerings,
   getOthers,
 } from '@/lib/queries/cv'
+import type { CVLanguage } from '@/types'
 import StepProgress from '@/components/cv/StepProgress'
 import PersonalInfoForm from '@/components/cv/PersonalInfoForm'
 import ProfileTextForm from '@/components/cv/ProfileTextForm'
@@ -58,6 +59,8 @@ export default async function CVStepPage({
     notFound()
   }
 
+  const cvLanguage = (cv.language ?? 'sv') as CVLanguage
+
   // Pre-fetch data for the current step only
   const personalInfo = stepNum === 1 ? await getPersonalInfo(params.id) : null
   const profileText = stepNum === 2 ? await getProfileText(params.id) : null
@@ -93,11 +96,19 @@ export default async function CVStepPage({
       )}
 
       {stepNum === 2 && (
-        <ProfileTextForm cvId={params.id} initialSummary={profileText} />
+        <ProfileTextForm
+          cvId={params.id}
+          initialSummary={profileText}
+          language={cvLanguage}
+        />
       )}
 
       {stepNum === 3 && (
-        <ExperienceForm cvId={params.id} initialData={experiences} />
+        <ExperienceForm
+          cvId={params.id}
+          initialData={experiences}
+          language={cvLanguage}
+        />
       )}
 
       {stepNum === 4 && (
@@ -112,6 +123,7 @@ export default async function CVStepPage({
           initialHobbies={hobbies}
           initialVolunteerings={volunteerings}
           initialOthers={others}
+          language={cvLanguage}
         />
       )}
     </div>

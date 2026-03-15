@@ -26,7 +26,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type { CVSkill, CVLanguageEntry, CVHobbies, CVVolunteering, CVOther, SaveResult } from '@/types'
+import type { CVSkill, CVLanguageEntry, CVHobbies, CVVolunteering, CVOther, SaveResult, CVLanguage } from '@/types'
 
 interface Props {
   cvId: string
@@ -35,6 +35,8 @@ interface Props {
   initialHobbies: CVHobbies | null
   initialVolunteerings: CVVolunteering[]
   initialOthers: CVOther[]
+  language?: CVLanguage
+  isGuest?: boolean
   onSave?: (values: Step5Values) => Promise<SaveResult>
   nextHref?: string
   prevHref?: string
@@ -82,6 +84,8 @@ export default function SkillsLanguagesForm({
   initialHobbies,
   initialVolunteerings,
   initialOthers,
+  language = 'sv',
+  isGuest,
   onSave,
   nextHref,
   prevHref,

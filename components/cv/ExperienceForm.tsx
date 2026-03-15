@@ -10,11 +10,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { CVExperience } from '@/types'
-import type { SaveResult } from '@/types'
+import type { SaveResult, CVLanguage } from '@/types'
 
 interface Props {
   cvId: string
   initialData: CVExperience[]
+  language?: CVLanguage
+  isGuest?: boolean
   onSave?: (values: ExperienceValues[]) => Promise<SaveResult>
   nextHref?: string
   prevHref?: string
@@ -71,7 +73,7 @@ function FieldError({ message }: { message?: string }) {
   )
 }
 
-export default function ExperienceForm({ cvId, initialData, onSave, nextHref, prevHref, onAfterSave }: Props) {
+export default function ExperienceForm({ cvId, initialData, language = 'sv', isGuest, onSave, nextHref, prevHref, onAfterSave }: Props) {
   const router = useRouter()
   const [saveError, setSaveError] = useState('')
 
