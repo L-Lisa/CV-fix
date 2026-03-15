@@ -192,3 +192,52 @@ export interface FullCV {
   volunteering: CVVolunteering[]
   other: CVOther[]
 }
+
+// ─── AI ──────────────────────────────────────────────────────────────────────
+
+export interface AIProfilePayload {
+  language: 'sv' | 'en'
+  // Auth flow: send cvId, server fetches data
+  cvId?: string
+  // Guest flow: send data directly
+  guestData?: {
+    headline: string | null
+    experiences: Array<{
+      job_title: string | null
+      employer: string | null
+      description: string | null
+    }>
+    educations: Array<{
+      program: string | null
+      institution: string | null
+    }>
+    skills: Array<{ name: string | null }>
+    languages: Array<{ language: string | null; level: string | null }>
+  }
+}
+
+export interface AIDescriptionPayload {
+  jobTitle: string
+  employer: string
+  currentDescription: string
+  language: 'sv' | 'en'
+  cvId?: string     // auth flow: verify ownership
+  isGuest?: boolean // guest flow: skip auth
+}
+
+export interface AISkillsPayload {
+  language: 'sv' | 'en'
+  cvId?: string
+  guestData?: {
+    experiences: Array<{ job_title: string | null }>
+    educations: Array<{ program: string | null }>
+    existingSkills: Array<{ name: string | null }>
+  }
+}
+
+export interface AIResult {
+  result: string
+  systemPrompt?: string // dev mode: visible in expandable panel
+  userPrompt?: string   // dev mode: visible in expandable panel
+  error?: string
+}
