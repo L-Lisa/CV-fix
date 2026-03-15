@@ -27,11 +27,18 @@ function CVCard({ cv }: { cv: CV }) {
           </span>
         </p>
       </div>
-      <Link href={`/cv/${cv.id}/edit/1`} className="shrink-0">
-        <Button variant="outline" size="sm">
-          Redigera
-        </Button>
-      </Link>
+      <div className="flex gap-2 shrink-0">
+        <Link href={`/cv/${cv.id}/preview`}>
+          <Button variant="outline" size="sm">
+            Visa
+          </Button>
+        </Link>
+        <Link href={`/cv/${cv.id}/edit/1`}>
+          <Button variant="outline" size="sm">
+            Redigera
+          </Button>
+        </Link>
+      </div>
     </div>
   )
 }

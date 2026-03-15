@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import type {
   CV,
   CVPersonalInfo,
+  CVProfile,
   CVExperience,
   CVEducation,
   CVSkill,
@@ -12,6 +13,7 @@ import type {
   CVHobbies,
   CVVolunteering,
   CVOther,
+  FullCV,
 } from '@/types'
 
 export async function listCVs(): Promise<CV[]> {
@@ -120,6 +122,49 @@ export async function getOthers(cvId: string): Promise<CVOther[]> {
     .eq('cv_id', cvId)
     .order('sort_order', { ascending: true })
   return (data ?? []) as CVOther[]
+}
+
+export async function getFullCV(cvId: string): Promise<FullCV | null> {
+  const supabase = createClient()
+
+  const [
+    cvRow,
+    personalInfo,
+    profileRow,
+    experiences,
+    educations,
+    skills,
+    languages,
+    hobbies,
+    volunteerings,
+    others,
+  ] = await Promise.all([
+    supabase.from('cvs').select('*').eq('id', cvId).single(),
+    getPersonalInfo(cvId),
+    supabase.from('cv_profile').select('*').eq('cv_id', cvId).single(),
+    getExperiences(cvId),
+    getEducations(cvId),
+    getSkills(cvId),
+    getLanguageEntries(cvId),
+    getHobbies(cvId),
+    getVolunteerings(cvId),
+    getOthers(cvId),
+  ])
+
+  if (cvRow.error || !cvRow.data) return null
+
+  return {
+    cv: cvRow.data as CV,
+    personalInfo,
+    profile: profileRow.data ? (profileRow.data as CVProfile) : null,
+    experiences,
+    educations,
+    skills,
+    languages,
+    hobbies,
+    volunteering: volunteerings,
+    other: others,
+  }
 }
 
 export async function getPersonalInfo(

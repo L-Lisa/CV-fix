@@ -3,7 +3,7 @@
 // Mutation server actions only. For reads, use lib/queries/cv.ts.
 
 import { createClient } from '@/lib/supabase/server'
-import type { CVLanguage } from '@/types'
+import type { CVLanguage, CVLayout } from '@/types'
 import type {
   PersonalInfoValues,
   ExperienceValues,
@@ -22,6 +22,33 @@ export type CVActionResult =
 export type SaveResult =
   | { success: true }
   | { success: false; error: string }
+
+export async function updateCVSettings(
+  cvId: string,
+  layout: CVLayout,
+  accentColor: string
+): Promise<SaveResult> {
+  const supabase = createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return { success: false, error: 'Inte inloggad' }
+
+  const { error } = await supabase
+    .from('cvs')
+    .update({ layout, accent_color: accentColor })
+    .eq('id', cvId)
+    .eq('user_id', user.id)
+
+  if (error) {
+    console.error('updateCVSettings failed:', error.message)
+    return { success: false, error: 'Det gick inte att spara. Försök igen.' }
+  }
+
+  return { success: true }
+}
 
 export async function createCV(
   language: CVLanguage,

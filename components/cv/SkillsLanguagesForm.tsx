@@ -186,7 +186,7 @@ export default function SkillsLanguagesForm({
     }
 
     await touchCV(cvId)
-    router.push('/dashboard')
+    router.push(`/cv/${cvId}/preview`)
   }
 
   return (
