@@ -4,7 +4,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import type { CVLanguage } from '@/types'
-import type { PersonalInfoValues } from '@/lib/validation/cv'
+import type { PersonalInfoValues, ExperienceValues } from '@/lib/validation/cv'
 
 export type CVActionResult =
   | { success: true; cvId: string }
@@ -65,6 +65,56 @@ export async function saveProfileText(
   if (error) {
     console.error('saveProfileText failed:', error.message)
     return { success: false, error: 'Det gick inte att spara. Försök igen.' }
+  }
+
+  await supabase
+    .from('cvs')
+    .update({ updated_at: new Date().toISOString() })
+    .eq('id', cvId)
+    .eq('user_id', user.id)
+
+  return { success: true }
+}
+
+export async function saveExperiences(
+  cvId: string,
+  experiences: ExperienceValues[]
+): Promise<SaveResult> {
+  const supabase = createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return { success: false, error: 'Inte inloggad' }
+
+  // Replace strategy: delete all existing rows, then insert the new list.
+  // Simpler and safer than diffing individual rows for a small collection.
+  const { error: deleteError } = await supabase
+    .from('cv_experiences')
+    .delete()
+    .eq('cv_id', cvId)
+
+  if (deleteError) {
+    console.error('saveExperiences delete failed:', deleteError.message)
+    return { success: false, error: 'Det gick inte att spara. Försök igen.' }
+  }
+
+  if (experiences.length > 0) {
+    const rows = experiences.map((exp, i) => ({
+      cv_id: cvId,
+      ...exp,
+      sort_order: i,
+    }))
+
+    const { error: insertError } = await supabase
+      .from('cv_experiences')
+      .insert(rows)
+
+    if (insertError) {
+      console.error('saveExperiences insert failed:', insertError.message)
+      return { success: false, error: 'Det gick inte att spara. Försök igen.' }
+    }
   }
 
   await supabase

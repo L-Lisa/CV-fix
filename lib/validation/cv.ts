@@ -42,3 +42,64 @@ export const profileTextSchema = z.object({
 })
 
 export type ProfileTextValues = z.infer<typeof profileTextSchema>
+
+// ─── Step 3: Work experience ──────────────────────────────────────────────────
+
+export const experienceSchema = z.object({
+  job_title: z.string().min(1, 'Jobbtitel krävs'),
+  employer: z.string().min(1, 'Arbetsgivare krävs'),
+  city: z.string().max(80).optional().or(z.literal('')),
+  country: z.string().max(80).optional().or(z.literal('')),
+  start_month: z.number().int().min(1).max(12),
+  start_year: z.number().int().min(1900).max(2100),
+  end_month: z.number().int().min(1).max(12).nullable(),
+  end_year: z.number().int().min(1900).max(2100).nullable(),
+  is_current: z.boolean(),
+  description: z.string().max(2000).optional().or(z.literal('')),
+  type: z.enum(['job', 'internship', 'summer', 'volunteer']).nullable(),
+}).refine(
+  (d) => d.is_current || (d.end_month !== null && d.end_year !== null),
+  { message: 'Ange slutdatum eller markera som pågående', path: ['end_year'] }
+).refine(
+  (d) => {
+    if (d.is_current || d.end_year === null) return true
+    if (d.end_year !== d.start_year) return d.end_year > d.start_year
+    return (d.end_month ?? 0) >= d.start_month
+  },
+  { message: 'Slutdatum kan inte vara före startdatum', path: ['end_year'] }
+)
+
+export const experiencesSchema = z.object({
+  experiences: z.array(experienceSchema),
+})
+
+export type ExperienceValues = z.infer<typeof experienceSchema>
+export type ExperiencesValues = z.infer<typeof experiencesSchema>
+
+// ─── Step 4: Education ────────────────────────────────────────────────────────
+
+export const educationSchema = z.object({
+  institution: z.string().min(1, 'Skola / organisation krävs'),
+  program: z.string().min(1, 'Program / utbildning krävs'),
+  level: z.enum(['gymnasium', 'yh', 'hogskola', 'kurs', 'annat']).nullable(),
+  start_year: z.number().int().min(1900).max(2100),
+  end_year: z.number().int().min(1900).max(2100).nullable(),
+  is_current: z.boolean(),
+  description: z.string().max(1000).optional().or(z.literal('')),
+}).refine(
+  (d) => d.is_current || d.end_year !== null,
+  { message: 'Ange slutår eller markera som pågående', path: ['end_year'] }
+).refine(
+  (d) => {
+    if (d.is_current || d.end_year === null) return true
+    return d.end_year >= d.start_year
+  },
+  { message: 'Slutår kan inte vara före startår', path: ['end_year'] }
+)
+
+export const educationsSchema = z.object({
+  educations: z.array(educationSchema),
+})
+
+export type EducationValues = z.infer<typeof educationSchema>
+export type EducationsValues = z.infer<typeof educationsSchema>

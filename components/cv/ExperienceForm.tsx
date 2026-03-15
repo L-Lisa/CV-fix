@@ -1,0 +1,360 @@
+'use client'
+
+import { useForm, useFieldArray, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { experiencesSchema, type ExperiencesValues } from '@/lib/validation/cv'
+import { saveExperiences } from '@/lib/actions/cv'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import type { CVExperience } from '@/types'
+
+interface Props {
+  cvId: string
+  initialData: CVExperience[]
+}
+
+const MONTHS = [
+  { value: 1, label: 'Jan' },
+  { value: 2, label: 'Feb' },
+  { value: 3, label: 'Mar' },
+  { value: 4, label: 'Apr' },
+  { value: 5, label: 'Maj' },
+  { value: 6, label: 'Jun' },
+  { value: 7, label: 'Jul' },
+  { value: 8, label: 'Aug' },
+  { value: 9, label: 'Sep' },
+  { value: 10, label: 'Okt' },
+  { value: 11, label: 'Nov' },
+  { value: 12, label: 'Dec' },
+]
+
+const EXPERIENCE_TYPES = [
+  { value: 'job', label: 'Jobb' },
+  { value: 'internship', label: 'Praktik' },
+  { value: 'summer', label: 'Sommarjobb' },
+  { value: 'volunteer', label: 'Volontär' },
+] as const
+
+const CURRENT_YEAR = new Date().getFullYear()
+const YEARS = Array.from({ length: 60 }, (_, i) => CURRENT_YEAR - i)
+
+function emptyExperience() {
+  return {
+    job_title: '',
+    employer: '',
+    city: '',
+    country: '',
+    start_month: 1 as number,
+    start_year: CURRENT_YEAR,
+    end_month: null as number | null,
+    end_year: null as number | null,
+    is_current: false,
+    description: '',
+    type: null as 'job' | 'internship' | 'summer' | 'volunteer' | null,
+  }
+}
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null
+  return (
+    <p className="text-sm text-red-600 mt-1" role="alert">
+      {message}
+    </p>
+  )
+}
+
+export default function ExperienceForm({ cvId, initialData }: Props) {
+  const router = useRouter()
+  const [saveError, setSaveError] = useState('')
+
+  const {
+    register,
+    control,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<ExperiencesValues>({
+    resolver: zodResolver(experiencesSchema),
+    defaultValues: {
+      experiences:
+        initialData.length > 0
+          ? initialData.map((e) => ({
+              job_title: e.job_title ?? '',
+              employer: e.employer ?? '',
+              city: e.city ?? '',
+              country: e.country ?? '',
+              start_month: e.start_month ?? 1,
+              start_year: e.start_year ?? CURRENT_YEAR,
+              end_month: e.end_month ?? null,
+              end_year: e.end_year ?? null,
+              is_current: e.is_current,
+              description: e.description ?? '',
+              type: e.type ?? null,
+            }))
+          : [emptyExperience()],
+    },
+  })
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'experiences',
+  })
+
+  async function onSubmit(values: ExperiencesValues) {
+    setSaveError('')
+    const result = await saveExperiences(cvId, values.experiences)
+
+    if (!result.success) {
+      setSaveError(result.error)
+      return
+    }
+
+    router.push(`/cv/${cvId}/edit/4`)
+  }
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
+      {fields.map((field, index) => {
+        const isCurrent = watch(`experiences.${index}.is_current`)
+        const expErrors = errors.experiences?.[index]
+
+        return (
+          <div
+            key={field.id}
+            className="bg-white border border-gray-200 rounded-lg p-5 space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-gray-700">
+                Erfarenhet {index + 1}
+              </p>
+              {fields.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => remove(index)}
+                  className="text-sm text-red-500 hover:text-red-700"
+                >
+                  Ta bort
+                </button>
+              )}
+            </div>
+
+            {/* Type */}
+            <div>
+              <Label htmlFor={`exp-type-${index}`}>Typ</Label>
+              <select
+                id={`exp-type-${index}`}
+                className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                {...register(`experiences.${index}.type`)}
+              >
+                <option value="">Välj typ</option>
+                {EXPERIENCE_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Title + Employer */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor={`exp-title-${index}`}>
+                  Jobbtitel <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id={`exp-title-${index}`}
+                  className="mt-1"
+                  {...register(`experiences.${index}.job_title`)}
+                />
+                <FieldError message={expErrors?.job_title?.message} />
+              </div>
+              <div>
+                <Label htmlFor={`exp-employer-${index}`}>
+                  Arbetsgivare <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id={`exp-employer-${index}`}
+                  className="mt-1"
+                  {...register(`experiences.${index}.employer`)}
+                />
+                <FieldError message={expErrors?.employer?.message} />
+              </div>
+            </div>
+
+            {/* City + Country */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor={`exp-city-${index}`}>Stad</Label>
+                <Input
+                  id={`exp-city-${index}`}
+                  className="mt-1"
+                  {...register(`experiences.${index}.city`)}
+                />
+              </div>
+              <div>
+                <Label htmlFor={`exp-country-${index}`}>Land</Label>
+                <Input
+                  id={`exp-country-${index}`}
+                  className="mt-1"
+                  placeholder="Sverige"
+                  {...register(`experiences.${index}.country`)}
+                />
+              </div>
+            </div>
+
+            {/* Start date */}
+            <div>
+              <Label>
+                Startdatum <span className="text-red-500">*</span>
+              </Label>
+              <div className="grid grid-cols-2 gap-3 mt-1">
+                <Controller
+                  control={control}
+                  name={`experiences.${index}.start_month`}
+                  render={({ field }) => (
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      value={field.value ?? ''}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                    >
+                      {MONTHS.map((m) => (
+                        <option key={m.value} value={m.value}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name={`experiences.${index}.start_year`}
+                  render={({ field }) => (
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      value={field.value ?? ''}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                    >
+                      {YEARS.map((y) => (
+                        <option key={y} value={y}>
+                          {y}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Is current */}
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id={`exp-current-${index}`}
+                className="h-4 w-4 rounded border-gray-300"
+                {...register(`experiences.${index}.is_current`)}
+              />
+              <Label htmlFor={`exp-current-${index}`}>Jobbar här nu</Label>
+            </div>
+
+            {/* End date (hidden when is_current) */}
+            {!isCurrent && (
+              <div>
+                <Label>Slutdatum</Label>
+                <div className="grid grid-cols-2 gap-3 mt-1">
+                  <Controller
+                    control={control}
+                    name={`experiences.${index}.end_month`}
+                    render={({ field }) => (
+                      <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        value={field.value ?? ''}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value === '' ? null : Number(e.target.value)
+                          )
+                        }
+                      >
+                        <option value="">Månad</option>
+                        {MONTHS.map((m) => (
+                          <option key={m.value} value={m.value}>
+                            {m.label}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  />
+                  <Controller
+                    control={control}
+                    name={`experiences.${index}.end_year`}
+                    render={({ field }) => (
+                      <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        value={field.value ?? ''}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value === '' ? null : Number(e.target.value)
+                          )
+                        }
+                      >
+                        <option value="">År</option>
+                        {YEARS.map((y) => (
+                          <option key={y} value={y}>
+                            {y}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  />
+                </div>
+                <FieldError message={expErrors?.end_year?.message} />
+              </div>
+            )}
+
+            {/* Description */}
+            <div>
+              <Label htmlFor={`exp-desc-${index}`}>Beskrivning</Label>
+              <textarea
+                id={`exp-desc-${index}`}
+                rows={3}
+                className="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+                placeholder="Beskriv dina arbetsuppgifter och resultat…"
+                {...register(`experiences.${index}.description`)}
+              />
+            </div>
+          </div>
+        )
+      })}
+
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={() => append(emptyExperience())}
+      >
+        + Lägg till erfarenhet
+      </Button>
+
+      {saveError && (
+        <p className="text-sm text-red-600" role="alert">
+          {saveError}
+        </p>
+      )}
+
+      <div className="flex justify-between">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push(`/cv/${cvId}/edit/2`)}
+        >
+          Tillbaka
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Sparar…' : 'Spara och fortsätt'}
+        </Button>
+      </div>
+    </form>
+  )
+}
