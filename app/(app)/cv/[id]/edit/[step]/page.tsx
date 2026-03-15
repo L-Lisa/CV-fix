@@ -1,5 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getPersonalInfo } from '@/lib/queries/cv'
+import PersonalInfoForm from '@/components/cv/PersonalInfoForm'
 
 const VALID_STEPS = [1, 2, 3, 4, 5] as const
 type ValidStep = (typeof VALID_STEPS)[number]
@@ -41,6 +43,9 @@ export default async function CVStepPage({
     notFound()
   }
 
+  // Pre-fetch data for the current step
+  const personalInfo = stepNum === 1 ? await getPersonalInfo(params.id) : null
+
   return (
     <div>
       <p className="text-sm text-gray-500 mb-1">
@@ -49,10 +54,16 @@ export default async function CVStepPage({
       <h2 className="text-xl font-semibold text-gray-900 mb-6">
         {STEP_LABELS[stepNum]}
       </h2>
-      {/* Form components wired in 3.2–3.6 */}
-      <div className="bg-white border border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-400 text-sm">
-        Formulär för &ldquo;{STEP_LABELS[stepNum]}&rdquo; byggs i nästa steg.
-      </div>
+
+      {stepNum === 1 && (
+        <PersonalInfoForm cvId={params.id} initialData={personalInfo} />
+      )}
+
+      {stepNum !== 1 && (
+        <div className="bg-white border border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-400 text-sm">
+          Formulär för &ldquo;{STEP_LABELS[stepNum]}&rdquo; byggs i nästa steg.
+        </div>
+      )}
     </div>
   )
 }
