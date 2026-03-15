@@ -11,6 +11,7 @@ import {
   getVolunteerings,
   getOthers,
 } from '@/lib/queries/cv'
+import StepProgress from '@/components/cv/StepProgress'
 import PersonalInfoForm from '@/components/cv/PersonalInfoForm'
 import ProfileTextForm from '@/components/cv/ProfileTextForm'
 import ExperienceForm from '@/components/cv/ExperienceForm'
@@ -57,7 +58,7 @@ export default async function CVStepPage({
     notFound()
   }
 
-  // Pre-fetch data for the current step
+  // Pre-fetch data for the current step only
   const personalInfo = stepNum === 1 ? await getPersonalInfo(params.id) : null
   const profileText = stepNum === 2 ? await getProfileText(params.id) : null
   const experiences = stepNum === 3 ? await getExperiences(params.id) : []
@@ -74,10 +75,15 @@ export default async function CVStepPage({
       : [[], [], null, [], []]
 
   return (
-    <div>
-      <p className="text-sm text-gray-500 mb-1">
-        Steg {stepNum} av {VALID_STEPS.length}
-      </p>
+    <div className="max-w-2xl mx-auto">
+      <p className="text-sm font-medium text-gray-500 mb-1 truncate">{cv.title}</p>
+
+      <StepProgress
+        current={stepNum}
+        total={VALID_STEPS.length}
+        labels={Object.values(STEP_LABELS)}
+      />
+
       <h2 className="text-xl font-semibold text-gray-900 mb-6">
         {STEP_LABELS[stepNum]}
       </h2>
@@ -107,12 +113,6 @@ export default async function CVStepPage({
           initialVolunteerings={volunteerings}
           initialOthers={others}
         />
-      )}
-
-      {stepNum !== 1 && stepNum !== 2 && stepNum !== 3 && stepNum !== 4 && stepNum !== 5 && (
-        <div className="bg-white border border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-400 text-sm">
-          Formulär för &ldquo;{STEP_LABELS[stepNum]}&rdquo; byggs i nästa steg.
-        </div>
       )}
     </div>
   )
