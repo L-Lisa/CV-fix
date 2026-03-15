@@ -42,6 +42,32 @@ export async function updateCVSettings(
   return { success: true }
 }
 
+export async function updateCVLanguage(
+  cvId: string,
+  language: CVLanguage
+): Promise<SaveResult> {
+  const supabase = createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return { success: false, error: 'Inte inloggad' }
+
+  const { error } = await supabase
+    .from('cvs')
+    .update({ language })
+    .eq('id', cvId)
+    .eq('user_id', user.id)
+
+  if (error) {
+    console.error('updateCVLanguage failed:', error.message)
+    return { success: false, error: 'Det gick inte att spara. Försök igen.' }
+  }
+
+  return { success: true }
+}
+
 export async function createCV(
   language: CVLanguage,
   title: string
