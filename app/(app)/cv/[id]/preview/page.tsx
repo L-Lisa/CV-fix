@@ -51,6 +51,10 @@ export default async function PreviewPage({
   const activeLayout = fullCV.cv.layout
   const accentColor = fullCV.cv.accent_color ?? '#2563eb'
 
+  const editedByCoach =
+    fullCV.cv.updated_by !== null &&
+    fullCV.cv.updated_by !== fullCV.cv.user_id
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -58,7 +62,14 @@ export default async function PreviewPage({
           <h1 className="text-2xl font-semibold text-gray-900">
             {fullCV.cv.title}
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">Förhandsvisning</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-sm text-gray-500">Förhandsvisning</p>
+            {editedByCoach && (
+              <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-xs text-blue-700">
+                Ändrad av coach
+              </span>
+            )}
+          </div>
         </div>
         <Link href={`/cv/${params.id}/edit/1`}>
           <Button variant="outline">Redigera</Button>
