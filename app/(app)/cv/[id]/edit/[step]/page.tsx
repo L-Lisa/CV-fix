@@ -1,10 +1,21 @@
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getPersonalInfo, getProfileText, getExperiences, getEducations } from '@/lib/queries/cv'
+import {
+  getPersonalInfo,
+  getProfileText,
+  getExperiences,
+  getEducations,
+  getSkills,
+  getLanguageEntries,
+  getHobbies,
+  getVolunteerings,
+  getOthers,
+} from '@/lib/queries/cv'
 import PersonalInfoForm from '@/components/cv/PersonalInfoForm'
 import ProfileTextForm from '@/components/cv/ProfileTextForm'
 import ExperienceForm from '@/components/cv/ExperienceForm'
 import EducationForm from '@/components/cv/EducationForm'
+import SkillsLanguagesForm from '@/components/cv/SkillsLanguagesForm'
 
 const VALID_STEPS = [1, 2, 3, 4, 5] as const
 type ValidStep = (typeof VALID_STEPS)[number]
@@ -51,6 +62,16 @@ export default async function CVStepPage({
   const profileText = stepNum === 2 ? await getProfileText(params.id) : null
   const experiences = stepNum === 3 ? await getExperiences(params.id) : []
   const educations = stepNum === 4 ? await getEducations(params.id) : []
+  const [skills, languages, hobbies, volunteerings, others] =
+    stepNum === 5
+      ? await Promise.all([
+          getSkills(params.id),
+          getLanguageEntries(params.id),
+          getHobbies(params.id),
+          getVolunteerings(params.id),
+          getOthers(params.id),
+        ])
+      : [[], [], null, [], []]
 
   return (
     <div>
@@ -77,7 +98,18 @@ export default async function CVStepPage({
         <EducationForm cvId={params.id} initialData={educations} />
       )}
 
-      {stepNum !== 1 && stepNum !== 2 && stepNum !== 3 && stepNum !== 4 && (
+      {stepNum === 5 && (
+        <SkillsLanguagesForm
+          cvId={params.id}
+          initialSkills={skills}
+          initialLanguages={languages}
+          initialHobbies={hobbies}
+          initialVolunteerings={volunteerings}
+          initialOthers={others}
+        />
+      )}
+
+      {stepNum !== 1 && stepNum !== 2 && stepNum !== 3 && stepNum !== 4 && stepNum !== 5 && (
         <div className="bg-white border border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-400 text-sm">
           Formulär för &ldquo;{STEP_LABELS[stepNum]}&rdquo; byggs i nästa steg.
         </div>

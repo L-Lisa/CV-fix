@@ -2,7 +2,17 @@
 // Do NOT import in Client Components — use server actions for mutations instead.
 
 import { createClient } from '@/lib/supabase/server'
-import type { CV, CVPersonalInfo, CVExperience, CVEducation } from '@/types'
+import type {
+  CV,
+  CVPersonalInfo,
+  CVExperience,
+  CVEducation,
+  CVSkill,
+  CVLanguageEntry,
+  CVHobbies,
+  CVVolunteering,
+  CVOther,
+} from '@/types'
 
 export async function listCVs(): Promise<CV[]> {
   const supabase = createClient()
@@ -59,6 +69,57 @@ export async function getEducations(cvId: string): Promise<CVEducation[]> {
 
   if (error) return []
   return (data ?? []) as CVEducation[]
+}
+
+export async function getSkills(cvId: string): Promise<CVSkill[]> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from('cv_skills')
+    .select('*')
+    .eq('cv_id', cvId)
+    .order('sort_order', { ascending: true })
+  return (data ?? []) as CVSkill[]
+}
+
+export async function getLanguageEntries(cvId: string): Promise<CVLanguageEntry[]> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from('cv_languages')
+    .select('*')
+    .eq('cv_id', cvId)
+    .order('sort_order', { ascending: true })
+  return (data ?? []) as CVLanguageEntry[]
+}
+
+export async function getHobbies(cvId: string): Promise<CVHobbies | null> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('cv_hobbies')
+    .select('*')
+    .eq('cv_id', cvId)
+    .single()
+  if (error) return null
+  return data as CVHobbies
+}
+
+export async function getVolunteerings(cvId: string): Promise<CVVolunteering[]> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from('cv_volunteering')
+    .select('*')
+    .eq('cv_id', cvId)
+    .order('sort_order', { ascending: true })
+  return (data ?? []) as CVVolunteering[]
+}
+
+export async function getOthers(cvId: string): Promise<CVOther[]> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from('cv_other')
+    .select('*')
+    .eq('cv_id', cvId)
+    .order('sort_order', { ascending: true })
+  return (data ?? []) as CVOther[]
 }
 
 export async function getPersonalInfo(

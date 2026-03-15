@@ -4,7 +4,16 @@
 
 import { createClient } from '@/lib/supabase/server'
 import type { CVLanguage } from '@/types'
-import type { PersonalInfoValues, ExperienceValues, EducationValues } from '@/lib/validation/cv'
+import type {
+  PersonalInfoValues,
+  ExperienceValues,
+  EducationValues,
+  SkillValues,
+  LanguageEntryValues,
+  HobbiesValues,
+  VolunteeringValues,
+  OtherEntryValues,
+} from '@/lib/validation/cv'
 
 export type CVActionResult =
   | { success: true; cvId: string }
@@ -172,6 +181,131 @@ export async function saveEducations(
     .eq('user_id', user.id)
 
   return { success: true }
+}
+
+export async function saveSkills(
+  cvId: string,
+  skills: SkillValues[]
+): Promise<SaveResult> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Inte inloggad' }
+
+  await supabase.from('cv_skills').delete().eq('cv_id', cvId)
+
+  if (skills.length > 0) {
+    const { error } = await supabase
+      .from('cv_skills')
+      .insert(skills.map((s, i) => ({ cv_id: cvId, ...s, sort_order: i })))
+    if (error) {
+      console.error('saveSkills failed:', error.message)
+      return { success: false, error: 'Det gick inte att spara. Försök igen.' }
+    }
+  }
+
+  return { success: true }
+}
+
+export async function saveLanguages(
+  cvId: string,
+  languages: LanguageEntryValues[]
+): Promise<SaveResult> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Inte inloggad' }
+
+  await supabase.from('cv_languages').delete().eq('cv_id', cvId)
+
+  if (languages.length > 0) {
+    const { error } = await supabase
+      .from('cv_languages')
+      .insert(languages.map((l, i) => ({ cv_id: cvId, ...l, sort_order: i })))
+    if (error) {
+      console.error('saveLanguages failed:', error.message)
+      return { success: false, error: 'Det gick inte att spara. Försök igen.' }
+    }
+  }
+
+  return { success: true }
+}
+
+export async function saveHobbies(
+  cvId: string,
+  text: string
+): Promise<SaveResult> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Inte inloggad' }
+
+  const { error } = await supabase
+    .from('cv_hobbies')
+    .upsert({ cv_id: cvId, text }, { onConflict: 'cv_id' })
+
+  if (error) {
+    console.error('saveHobbies failed:', error.message)
+    return { success: false, error: 'Det gick inte att spara. Försök igen.' }
+  }
+
+  return { success: true }
+}
+
+export async function saveVolunteerings(
+  cvId: string,
+  volunteerings: VolunteeringValues[]
+): Promise<SaveResult> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Inte inloggad' }
+
+  await supabase.from('cv_volunteering').delete().eq('cv_id', cvId)
+
+  if (volunteerings.length > 0) {
+    const { error } = await supabase
+      .from('cv_volunteering')
+      .insert(volunteerings.map((v, i) => ({ cv_id: cvId, ...v, sort_order: i })))
+    if (error) {
+      console.error('saveVolunteerings failed:', error.message)
+      return { success: false, error: 'Det gick inte att spara. Försök igen.' }
+    }
+  }
+
+  return { success: true }
+}
+
+export async function saveOthers(
+  cvId: string,
+  others: OtherEntryValues[]
+): Promise<SaveResult> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Inte inloggad' }
+
+  await supabase.from('cv_other').delete().eq('cv_id', cvId)
+
+  if (others.length > 0) {
+    const { error } = await supabase
+      .from('cv_other')
+      .insert(others.map((o, i) => ({ cv_id: cvId, ...o, sort_order: i })))
+    if (error) {
+      console.error('saveOthers failed:', error.message)
+      return { success: false, error: 'Det gick inte att spara. Försök igen.' }
+    }
+  }
+
+  return { success: true }
+}
+
+// Touch cvs.updated_at after all step-5 sections are saved
+export async function touchCV(cvId: string): Promise<void> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  await supabase
+    .from('cvs')
+    .update({ updated_at: new Date().toISOString() })
+    .eq('id', cvId)
+    .eq('user_id', user.id)
 }
 
 export async function savePersonalInfo(

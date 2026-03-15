@@ -103,3 +103,75 @@ export const educationsSchema = z.object({
 
 export type EducationValues = z.infer<typeof educationSchema>
 export type EducationsValues = z.infer<typeof educationsSchema>
+
+// ─── Step 5: Skills ───────────────────────────────────────────────────────────
+
+export const skillSchema = z.object({
+  category: z.enum(['technical', 'language', 'other']).nullable(),
+  name: z.string().min(1, 'Namn krävs'),
+  level: z.number().int().min(1).max(5).nullable(),
+})
+
+export const skillsSchema = z.object({
+  skills: z.array(skillSchema),
+})
+
+export type SkillValues = z.infer<typeof skillSchema>
+export type SkillsValues = z.infer<typeof skillsSchema>
+
+// ─── Step 5: Languages ────────────────────────────────────────────────────────
+
+export const languageEntrySchema = z.object({
+  language: z.string().min(1, 'Språk krävs'),
+  level: z.enum(['native', 'fluent', 'good', 'basic']).nullable(),
+})
+
+export const languagesSchema = z.object({
+  languages: z.array(languageEntrySchema),
+})
+
+export type LanguageEntryValues = z.infer<typeof languageEntrySchema>
+export type LanguagesValues = z.infer<typeof languagesSchema>
+
+// ─── Step 5: Hobbies ─────────────────────────────────────────────────────────
+
+export const hobbiesSchema = z.object({
+  text: z.string().max(500).optional().or(z.literal('')),
+})
+
+export type HobbiesValues = z.infer<typeof hobbiesSchema>
+
+// ─── Step 5: Volunteering ─────────────────────────────────────────────────────
+
+export const volunteeringSchema = z.object({
+  role: z.string().min(1, 'Roll krävs'),
+  organisation: z.string().min(1, 'Organisation krävs'),
+  start_year: z.number().int().min(1900).max(2100),
+  end_year: z.number().int().min(1900).max(2100).nullable(),
+  is_current: z.boolean(),
+  description: z.string().max(1000).optional().or(z.literal('')),
+}).refine(
+  (d) => d.is_current || d.end_year !== null,
+  { message: 'Ange slutår eller markera som pågående', path: ['end_year'] }
+)
+
+export const volunteeringsSchema = z.object({
+  volunteerings: z.array(volunteeringSchema),
+})
+
+export type VolunteeringValues = z.infer<typeof volunteeringSchema>
+export type VolunteeringsValues = z.infer<typeof volunteeringsSchema>
+
+// ─── Step 5: Other ────────────────────────────────────────────────────────────
+
+export const otherEntrySchema = z.object({
+  label: z.string().min(1, 'Etikett krävs'),
+  text: z.string().min(1, 'Text krävs'),
+})
+
+export const othersSchema = z.object({
+  others: z.array(otherEntrySchema),
+})
+
+export type OtherEntryValues = z.infer<typeof otherEntrySchema>
+export type OthersValues = z.infer<typeof othersSchema>
