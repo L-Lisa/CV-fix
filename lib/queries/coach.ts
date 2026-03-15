@@ -2,7 +2,55 @@
 // Import these in Server Components only.
 
 import { createClient } from '@/lib/supabase/server'
-import type { Profile, CV, CVComment } from '@/types'
+import { validateCV } from '@/lib/ats/validate'
+import type {
+  Profile,
+  CV,
+  CVComment,
+  CVPersonalInfo,
+  CVProfile,
+  CVExperience,
+  CVEducation,
+  FullCV,
+} from '@/types'
+
+export interface ATSStats {
+  hard: number
+  soft: number
+}
+
+// Fetches the four sections needed for ATS validation and returns error counts.
+// Intentionally omits skills/languages/hobbies/volunteering/other — validateCV
+// does not check those, so we avoid unnecessary queries.
+export async function getATSStats(cvId: string): Promise<ATSStats> {
+  const supabase = createClient()
+
+  const [cvResult, piResult, profileResult, expResult, eduResult] = await Promise.all([
+    supabase.from('cvs').select('*').eq('id', cvId).single(),
+    supabase.from('cv_personal_info').select('*').eq('cv_id', cvId).single(),
+    supabase.from('cv_profile').select('*').eq('cv_id', cvId).single(),
+    supabase.from('cv_experiences').select('*').eq('cv_id', cvId).order('sort_order'),
+    supabase.from('cv_educations').select('*').eq('cv_id', cvId).order('sort_order'),
+  ])
+
+  if (!cvResult.data) return { hard: 0, soft: 0 }
+
+  const fullCV: FullCV = {
+    cv: cvResult.data as CV,
+    personalInfo: (piResult.data ?? null) as CVPersonalInfo | null,
+    profile: (profileResult.data ?? null) as CVProfile | null,
+    experiences: (expResult.data ?? []) as CVExperience[],
+    educations: (eduResult.data ?? []) as CVEducation[],
+    skills: [],
+    languages: [],
+    hobbies: null,
+    volunteering: [],
+    other: [],
+  }
+
+  const { hard, soft } = validateCV(fullCV)
+  return { hard: hard.length, soft: soft.length }
+}
 
 // Returns all participant profiles linked to the given coach.
 export async function getLinkedParticipants(coachId: string): Promise<Profile[]> {

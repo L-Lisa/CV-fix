@@ -1,17 +1,42 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { getLinkedParticipants, getParticipantCVs } from '@/lib/queries/coach'
+import { getLinkedParticipants, getParticipantCVs, getATSStats } from '@/lib/queries/coach'
 import { formatDate } from '@/lib/utils/format'
 import { Button } from '@/components/ui/button'
 import type { CV, Profile } from '@/types'
+import type { ATSStats } from '@/lib/queries/coach'
+
+function ATSBadge({ stats, hasBeenExported }: { stats: ATSStats; hasBeenExported: boolean }) {
+  if (stats.hard > 0) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-200 text-red-700 text-xs px-2 py-0.5 shrink-0">
+        {stats.hard} {stats.hard === 1 ? 'fel' : 'fel'}
+      </span>
+    )
+  }
+  if (stats.soft > 0) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs px-2 py-0.5 shrink-0">
+        {stats.soft} {stats.soft === 1 ? 'tips' : 'tips'}
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 text-green-700 text-xs px-2 py-0.5 shrink-0">
+      {hasBeenExported ? 'Exporterat' : 'Redo'}
+    </span>
+  )
+}
 
 function ParticipantCard({
   participant,
   cvs,
+  statsMap,
 }: {
   participant: Profile
   cvs: CV[]
+  statsMap: Map<string, ATSStats>
 }) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-5">
@@ -33,21 +58,27 @@ function ParticipantCard({
 
       {cvs.length > 0 && (
         <div className="space-y-2 border-t border-gray-100 pt-3">
-          {cvs.slice(0, 3).map((cv) => (
-            <div key={cv.id} className="flex items-center justify-between">
-              <div className="min-w-0">
-                <p className="text-sm text-gray-700 truncate">{cv.title}</p>
-                <p className="text-xs text-gray-400">
-                  Uppdaterad {formatDate(cv.updated_at)}
-                </p>
+          {cvs.slice(0, 3).map((cv) => {
+            const stats = statsMap.get(cv.id) ?? { hard: 0, soft: 0 }
+            return (
+              <div key={cv.id} className="flex items-center justify-between gap-3">
+                <div className="min-w-0 flex items-center gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm text-gray-700 truncate">{cv.title}</p>
+                    <p className="text-xs text-gray-400">
+                      Uppdaterad {formatDate(cv.updated_at)}
+                    </p>
+                  </div>
+                  <ATSBadge stats={stats} hasBeenExported={cv.has_been_exported} />
+                </div>
+                <Link href={`/coach/cv/${cv.id}`} className="shrink-0">
+                  <Button variant="outline" size="sm">
+                    Granska
+                  </Button>
+                </Link>
               </div>
-              <Link href={`/coach/cv/${cv.id}`} className="ml-4 shrink-0">
-                <Button variant="outline" size="sm">
-                  Granska
-                </Button>
-              </Link>
-            </div>
-          ))}
+            )
+          })}
           {cvs.length > 3 && (
             <Link
               href={`/coach/participant/${participant.id}`}
@@ -87,6 +118,11 @@ export default async function CoachDashboardPage() {
     participants.map((p) => getParticipantCVs(p.id))
   )
 
+  // Fetch ATS stats for all displayed CVs (up to 3 per participant) in parallel
+  const displayedCVs = cvsByParticipant.flatMap((cvs) => cvs.slice(0, 3))
+  const statsResults = await Promise.all(displayedCVs.map((cv) => getATSStats(cv.id)))
+  const statsMap = new Map(displayedCVs.map((cv, i) => [cv.id, statsResults[i]]))
+
   return (
     <div>
       <div className="mb-6">
@@ -114,6 +150,7 @@ export default async function CoachDashboardPage() {
               key={participant.id}
               participant={participant}
               cvs={cvsByParticipant[i]}
+              statsMap={statsMap}
             />
           ))}
         </div>
