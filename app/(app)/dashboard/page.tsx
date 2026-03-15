@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { listCVs } from '@/lib/queries/cv'
 import { formatDate } from '@/lib/utils/format'
 import { Button } from '@/components/ui/button'
+import GuestImportBanner from '@/components/cv/GuestImportBanner'
 import type { CV } from '@/types'
 
 function CVCard({ cv }: { cv: CV }) {
@@ -41,6 +42,7 @@ export default async function DashboardPage() {
 
   return (
     <div>
+      <GuestImportBanner />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Mina CV:n</h1>
         <Link href="/cv/new">

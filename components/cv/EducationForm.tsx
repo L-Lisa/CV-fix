@@ -10,10 +10,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { CVEducation } from '@/types'
+import type { SaveResult } from '@/types'
 
 interface Props {
   cvId: string
   initialData: CVEducation[]
+  onSave?: (values: EducationValues[]) => Promise<SaveResult>
+  nextHref?: string
+  prevHref?: string
 }
 
 const EDUCATION_LEVELS = [
@@ -48,7 +52,7 @@ function FieldError({ message }: { message?: string }) {
   )
 }
 
-export default function EducationForm({ cvId, initialData }: Props) {
+export default function EducationForm({ cvId, initialData, onSave, nextHref, prevHref }: Props) {
   const router = useRouter()
   const [saveError, setSaveError] = useState('')
 
@@ -83,14 +87,16 @@ export default function EducationForm({ cvId, initialData }: Props) {
 
   async function onSubmit(values: EducationsValues) {
     setSaveError('')
-    const result = await saveEducations(cvId, values.educations)
+    const result = onSave
+      ? await onSave(values.educations)
+      : await saveEducations(cvId, values.educations)
 
     if (!result.success) {
       setSaveError(result.error)
       return
     }
 
-    router.push(`/cv/${cvId}/edit/5`)
+    router.push(nextHref ?? `/cv/${cvId}/edit/5`)
   }
 
   return (
@@ -265,7 +271,7 @@ export default function EducationForm({ cvId, initialData }: Props) {
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.push(`/cv/${cvId}/edit/3`)}
+          onClick={() => router.push(prevHref ?? `/cv/${cvId}/edit/3`)}
         >
           Tillbaka
         </Button>

@@ -8,13 +8,17 @@ import { profileTextSchema, type ProfileTextValues } from '@/lib/validation/cv'
 import { saveProfileText } from '@/lib/actions/cv'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import type { SaveResult } from '@/types'
 
 interface Props {
   cvId: string
   initialSummary: string | null
+  onSave?: (values: ProfileTextValues) => Promise<SaveResult>
+  nextHref?: string
+  prevHref?: string
 }
 
-export default function ProfileTextForm({ cvId, initialSummary }: Props) {
+export default function ProfileTextForm({ cvId, initialSummary, onSave, nextHref, prevHref }: Props) {
   const router = useRouter()
   const [saveError, setSaveError] = useState('')
 
@@ -33,14 +37,16 @@ export default function ProfileTextForm({ cvId, initialSummary }: Props) {
 
   async function onSubmit(values: ProfileTextValues) {
     setSaveError('')
-    const result = await saveProfileText(cvId, values.summary)
+    const result = onSave
+      ? await onSave(values)
+      : await saveProfileText(cvId, values.summary)
 
     if (!result.success) {
       setSaveError(result.error)
       return
     }
 
-    router.push(`/cv/${cvId}/edit/3`)
+    router.push(nextHref ?? `/cv/${cvId}/edit/3`)
   }
 
   return (
@@ -82,7 +88,7 @@ export default function ProfileTextForm({ cvId, initialSummary }: Props) {
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.push(`/cv/${cvId}/edit/1`)}
+          onClick={() => router.push(prevHref ?? `/cv/${cvId}/edit/1`)}
         >
           Tillbaka
         </Button>

@@ -13,6 +13,7 @@ import {
   type LanguagesValues,
   type VolunteeringsValues,
   type OthersValues,
+  type Step5Values,
 } from '@/lib/validation/cv'
 import {
   saveSkills,
@@ -25,7 +26,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type { CVSkill, CVLanguageEntry, CVHobbies, CVVolunteering, CVOther } from '@/types'
+import type { CVSkill, CVLanguageEntry, CVHobbies, CVVolunteering, CVOther, SaveResult } from '@/types'
 
 interface Props {
   cvId: string
@@ -34,6 +35,9 @@ interface Props {
   initialHobbies: CVHobbies | null
   initialVolunteerings: CVVolunteering[]
   initialOthers: CVOther[]
+  onSave?: (values: Step5Values) => Promise<SaveResult>
+  nextHref?: string
+  prevHref?: string
 }
 
 const SKILL_CATEGORIES = [
@@ -77,6 +81,9 @@ export default function SkillsLanguagesForm({
   initialHobbies,
   initialVolunteerings,
   initialOthers,
+  onSave,
+  nextHref,
+  prevHref,
 }: Props) {
   const router = useRouter()
   const [saveError, setSaveError] = useState('')
@@ -170,6 +177,23 @@ export default function SkillsLanguagesForm({
     const volsData = volunteeringsForm.getValues()
     const othersData = othersForm.getValues()
 
+    if (onSave) {
+      const result = await onSave({
+        skills: skillsData.skills,
+        languages: langsData.languages,
+        hobbies: hobbiesText,
+        volunteerings: volsData.volunteerings,
+        others: othersData.others,
+      })
+      if (!result.success) {
+        setSaveError(result.error)
+        setSubmitting(false)
+        return
+      }
+      router.push(nextHref ?? `/cv/${cvId}/preview`)
+      return
+    }
+
     const results = await Promise.all([
       saveSkills(cvId, skillsData.skills),
       saveLanguages(cvId, langsData.languages),
@@ -186,7 +210,7 @@ export default function SkillsLanguagesForm({
     }
 
     await touchCV(cvId)
-    router.push(`/cv/${cvId}/preview`)
+    router.push(nextHref ?? `/cv/${cvId}/preview`)
   }
 
   return (
@@ -534,7 +558,7 @@ export default function SkillsLanguagesForm({
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.push(`/cv/${cvId}/edit/4`)}
+          onClick={() => router.push(prevHref ?? `/cv/${cvId}/edit/4`)}
         >
           Tillbaka
         </Button>

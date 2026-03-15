@@ -10,10 +10,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { CVPersonalInfo } from '@/types'
+import type { SaveResult } from '@/types'
 
 interface Props {
   cvId: string
   initialData: CVPersonalInfo | null
+  onSave?: (values: PersonalInfoValues) => Promise<SaveResult>
+  nextHref?: string
 }
 
 function FieldError({ message }: { message?: string }) {
@@ -25,7 +28,7 @@ function FieldError({ message }: { message?: string }) {
   )
 }
 
-export default function PersonalInfoForm({ cvId, initialData }: Props) {
+export default function PersonalInfoForm({ cvId, initialData, onSave, nextHref }: Props) {
   const router = useRouter()
   const [saveError, setSaveError] = useState('')
 
@@ -53,14 +56,16 @@ export default function PersonalInfoForm({ cvId, initialData }: Props) {
 
   async function onSubmit(values: PersonalInfoValues) {
     setSaveError('')
-    const result = await savePersonalInfo(cvId, values)
+    const result = onSave
+      ? await onSave(values)
+      : await savePersonalInfo(cvId, values)
 
     if (!result.success) {
       setSaveError(result.error)
       return
     }
 
-    router.push(`/cv/${cvId}/edit/2`)
+    router.push(nextHref ?? `/cv/${cvId}/edit/2`)
   }
 
   return (

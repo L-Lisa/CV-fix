@@ -10,10 +10,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { CVExperience } from '@/types'
+import type { SaveResult } from '@/types'
 
 interface Props {
   cvId: string
   initialData: CVExperience[]
+  onSave?: (values: ExperienceValues[]) => Promise<SaveResult>
+  nextHref?: string
+  prevHref?: string
 }
 
 const MONTHS = [
@@ -66,7 +70,7 @@ function FieldError({ message }: { message?: string }) {
   )
 }
 
-export default function ExperienceForm({ cvId, initialData }: Props) {
+export default function ExperienceForm({ cvId, initialData, onSave, nextHref, prevHref }: Props) {
   const router = useRouter()
   const [saveError, setSaveError] = useState('')
 
@@ -105,14 +109,16 @@ export default function ExperienceForm({ cvId, initialData }: Props) {
 
   async function onSubmit(values: ExperiencesValues) {
     setSaveError('')
-    const result = await saveExperiences(cvId, values.experiences)
+    const result = onSave
+      ? await onSave(values.experiences)
+      : await saveExperiences(cvId, values.experiences)
 
     if (!result.success) {
       setSaveError(result.error)
       return
     }
 
-    router.push(`/cv/${cvId}/edit/4`)
+    router.push(nextHref ?? `/cv/${cvId}/edit/4`)
   }
 
   return (
@@ -347,7 +353,7 @@ export default function ExperienceForm({ cvId, initialData }: Props) {
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.push(`/cv/${cvId}/edit/2`)}
+          onClick={() => router.push(prevHref ?? `/cv/${cvId}/edit/2`)}
         >
           Tillbaka
         </Button>

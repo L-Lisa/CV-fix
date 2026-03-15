@@ -175,3 +175,13 @@ export const othersSchema = z.object({
 
 export type OtherEntryValues = z.infer<typeof otherEntrySchema>
 export type OthersValues = z.infer<typeof othersSchema>
+
+// ─── Step 5 combined (used by guest mode and SkillsLanguagesForm) ──────────────
+
+export interface Step5Values {
+  skills: SkillValues[]
+  languages: LanguageEntryValues[]
+  hobbies: string
+  volunteerings: VolunteeringValues[]
+  others: OtherEntryValues[]
+}
