@@ -26,7 +26,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type { CVSkill, CVLanguageEntry, CVHobbies, CVVolunteering, CVOther, SaveResult, CVLanguage } from '@/types'
+import type { CVSkill, CVLanguageEntry, CVHobbies, CVVolunteering, CVOther, SaveResult, CVLanguage, AISkillsPayload, AIResult } from '@/types'
+import { useAIMode } from '@/components/cv/AIToggle'
+import { Wand2 } from 'lucide-react'
 
 interface Props {
   cvId: string
@@ -95,6 +97,9 @@ export default function SkillsLanguagesForm({
   const [saveError, setSaveError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [hobbiesText, setHobbiesText] = useState(initialHobbies?.text ?? '')
+  const { aiEnabled } = useAIMode()
+  const [aiSkillsLoading, setAiSkillsLoading] = useState(false)
+  const [aiSkillsPrompts, setAiSkillsPrompts] = useState<{ system: string; user: string } | null>(null)
 
   // ── Skills form ──────────────────────────────────────────────────────────────
   const skillsForm = useForm<SkillsValues>({
@@ -165,6 +170,57 @@ export default function SkillsLanguagesForm({
   const { fields: otherFields, append: appendOther, remove: removeOther } =
     useFieldArray({ control: othersForm.control, name: 'others' })
 
+  async function handleSuggestSkills() {
+    setAiSkillsLoading(true)
+    setAiSkillsPrompts(null)
+
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 15000)
+
+    try {
+      const existingSkills = skillsForm.getValues().skills
+
+      const payload: AISkillsPayload = isGuest
+        ? {
+            language,
+            guestData: {
+              experiences: [],
+              educations: [],
+              existingSkills: existingSkills.map((s) => ({ name: s.name ?? null })),
+            },
+          }
+        : { language, cvId }
+
+      const res = await fetch('/api/ai/skills', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      })
+
+      const data: AIResult = await res.json()
+
+      if (!data.error && data.result) {
+        try {
+          const suggested: string[] = JSON.parse(data.result)
+          for (const name of suggested) {
+            appendSkill({ category: null, name, level: null })
+          }
+        } catch {
+          // malformed JSON — ignore silently
+        }
+        if (data.systemPrompt && data.userPrompt) {
+          setAiSkillsPrompts({ system: data.systemPrompt, user: data.userPrompt })
+        }
+      }
+    } catch {
+      // silent fail
+    } finally {
+      clearTimeout(timeout)
+      setAiSkillsLoading(false)
+    }
+  }
+
   async function handleSaveAll() {
     const [skillsValid, langsValid, volsValid, othersValid] = await Promise.all([
       skillsForm.trigger(),
@@ -226,7 +282,7 @@ export default function SkillsLanguagesForm({
   return (
     <div className="space-y-10">
       {/* ── Skills ── */}
-      <section>
+      <section className={`ai-shimmer ${aiEnabled ? 'ai-active' : ''} rounded-lg p-1`}>
         <SectionHeading title="Kunskaper & Färdigheter" />
         <div className="space-y-3">
           {skillFields.map((field, index) => {
@@ -293,14 +349,47 @@ export default function SkillsLanguagesForm({
             )
           })}
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          className="mt-3 w-full"
-          onClick={() => appendSkill({ category: null, name: '', level: null })}
-        >
-          + Lägg till färdighet
-        </Button>
+        <div className="mt-3 flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="flex-1"
+            onClick={() => appendSkill({ category: null, name: '', level: null })}
+          >
+            + Lägg till färdighet
+          </Button>
+          {aiEnabled && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={aiSkillsLoading}
+              onClick={handleSuggestSkills}
+              className="flex items-center gap-1 text-purple-600 border-purple-200 hover:bg-purple-50 disabled:opacity-50"
+            >
+              <Wand2 className="h-4 w-4" />
+              {aiSkillsLoading ? 'Föreslår…' : 'Föreslå med AI'}
+            </Button>
+          )}
+        </div>
+
+        {/* Dev mode: expandable prompt panel */}
+        {aiEnabled && aiSkillsPrompts && (
+          <details className="mt-2 text-xs text-gray-500 border border-purple-100 rounded-md">
+            <summary className="cursor-pointer px-3 py-2 font-medium text-purple-700 select-none">
+              Visa prompt (dev)
+            </summary>
+            <div className="px-3 pb-3 space-y-2">
+              <div>
+                <p className="font-semibold text-gray-600 mb-1">System:</p>
+                <pre className="whitespace-pre-wrap bg-gray-50 rounded p-2 text-gray-700">{aiSkillsPrompts.system}</pre>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-600 mb-1">User:</p>
+                <pre className="whitespace-pre-wrap bg-gray-50 rounded p-2 text-gray-700">{aiSkillsPrompts.user}</pre>
+              </div>
+            </div>
+          </details>
+        )}
       </section>
 
       {/* ── Languages ── */}
