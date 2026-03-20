@@ -9,6 +9,7 @@ import ATSPanel from '@/components/cv/ATSPanel'
 import LayoutPicker from '@/components/cv/LayoutPicker'
 import LanguageToggle from '@/components/cv/LanguageToggle'
 import CoachCommentsPanel from '@/components/cv/CoachCommentsPanel'
+import KeywordMatchPanel from '@/components/cv/KeywordMatchPanel'
 import { Button } from '@/components/ui/button'
 
 // PDFViewer is browser-only — load the whole inner component client-side
@@ -116,6 +117,12 @@ export default async function PreviewPage({
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <p className="text-sm font-semibold text-gray-700 mb-3">ATS-kontroll</p>
             <ATSPanel result={atsResult} />
+          </div>
+
+          {/* Keyword matching */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <p className="text-sm font-semibold text-gray-700 mb-3">Matcha mot jobbannons</p>
+            <KeywordMatchPanel cvId={params.id} language={activeLanguage} />
           </div>
 
           {/* Export */}

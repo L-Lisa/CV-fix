@@ -21,6 +21,7 @@ import {
   coachSaveEducations,
   coachSaveStep5,
 } from '@/lib/actions/coach'
+import KeywordMatchPanel from '@/components/cv/KeywordMatchPanel'
 import type { FullCV, CVComment } from '@/types'
 
 type EditableSection =
@@ -106,6 +107,14 @@ export default function CoachCVPageClient({ cvId, fullCV, comments }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* Keyword matching */}
+      <section className="bg-white border border-gray-200 rounded-lg p-5">
+        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+          Matcha mot jobbannons
+        </h2>
+        <KeywordMatchPanel cvId={cvId} language={fullCV.cv.language} />
+      </section>
+
       {/* Personal info */}
       <section className="bg-white border border-gray-200 rounded-lg p-5">
         <SectionHeader

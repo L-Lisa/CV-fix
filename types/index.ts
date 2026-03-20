@@ -236,6 +236,17 @@ export interface AISkillsPayload {
   }
 }
 
+export interface AIKeywordsPayload {
+  cvId: string
+  jobPosting: string
+  language: 'sv' | 'en'
+}
+
+export interface AIKeywordSuggestion {
+  keyword: string
+  section: string
+}
+
 export interface AIResult {
   result: string
   systemPrompt?: string // dev mode: visible in expandable panel
