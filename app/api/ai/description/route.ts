@@ -66,6 +66,7 @@ Nuvarande text: ${currentDescription?.trim() || 'ingen'}`
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error('AI description route failed:', msg)
-    return err(`AI-fel: ${msg}`)
+    const userMsg = msg.includes('credit') ? 'Vi har slut på AI cash.' : 'AI-tjänsten svarade inte. Försök igen.'
+    return err(userMsg)
   }
 }
