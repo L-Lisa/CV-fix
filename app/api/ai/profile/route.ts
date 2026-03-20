@@ -121,7 +121,8 @@ Språk: ${langLines || 'inga'}`
     }
     return NextResponse.json(result)
   } catch (e) {
-    console.error('AI profile route failed:', e)
-    return err('AI-tjänsten svarade inte. Försök igen.')
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('AI profile route failed:', msg)
+    return err(`AI-fel: ${msg}`)
   }
 }

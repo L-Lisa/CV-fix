@@ -101,7 +101,8 @@ ${jobPosting.slice(0, 3000)}`
     }
     return NextResponse.json(result)
   } catch (e) {
-    console.error('AI keywords route failed:', e)
-    return err('AI-tjänsten svarade inte. Försök igen.')
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('AI keywords route failed:', msg)
+    return err(`AI-fel: ${msg}`)
   }
 }
