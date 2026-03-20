@@ -42,8 +42,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (!user) return err('Inte inloggad.', 401)
 
   const fullCV = await getFullCV(cvId)
-  if (!fullCV || fullCV.cv.user_id !== user.id) {
-    return err('CV hittades inte.', 403)
+  if (!fullCV) return err('CV hittades inte.', 404)
+
+  const isOwner = fullCV.cv.user_id === user.id
+
+  if (!isOwner) {
+    // Allow coaches with a verified coach_link to the CV owner
+    const { data: link } = await supabase
+      .from('coach_links')
+      .select('id')
+      .eq('coach_id', user.id)
+      .eq('user_id', fullCV.cv.user_id)
+      .single()
+
+    if (!link) return err('Åtkomst nekad.', 403)
   }
 
   const { personalInfo, profile, experiences, educations, skills, languages } = fullCV
