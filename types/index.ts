@@ -197,6 +197,7 @@ export interface FullCV {
 
 export interface AIProfilePayload {
   language: 'sv' | 'en'
+  currentSummary?: string
   // Auth flow: send cvId, server fetches data
   cvId?: string
   // Guest flow: send data directly

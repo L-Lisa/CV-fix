@@ -359,16 +359,21 @@ export default function SkillsLanguagesForm({
             + Lägg till färdighet
           </Button>
           {aiEnabled && (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={aiSkillsLoading}
-              onClick={handleSuggestSkills}
-              className="flex items-center gap-1 text-purple-600 border-purple-200 hover:bg-purple-50 disabled:opacity-50"
-            >
-              <Wand2 className="h-4 w-4" />
-              {aiSkillsLoading ? 'Föreslår…' : 'Föreslå med AI'}
-            </Button>
+            <div className="flex flex-col items-start gap-1">
+              <span className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5">
+                Förslag på CV-tips · prompt under utveckling
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={aiSkillsLoading}
+                onClick={handleSuggestSkills}
+                className="flex items-center gap-1 text-purple-600 border-purple-200 hover:bg-purple-50 disabled:opacity-50"
+              >
+                <Wand2 className="h-4 w-4" />
+                {aiSkillsLoading ? 'Föreslår…' : 'Föreslå med AI'}
+              </Button>
+            </div>
           )}
         </div>
 
@@ -376,7 +381,7 @@ export default function SkillsLanguagesForm({
         {aiEnabled && aiSkillsPrompts && (
           <details className="mt-2 text-xs text-gray-500 border border-purple-100 rounded-md">
             <summary className="cursor-pointer px-3 py-2 font-medium text-purple-700 select-none">
-              Visa prompt (dev)
+              Förslag på CV-tips – prompt under utveckling
             </summary>
             <div className="px-3 pb-3 space-y-2">
               <div>

@@ -377,15 +377,20 @@ export default function ExperienceForm({ cvId, initialData, language = 'sv', isG
               <div className="flex items-center justify-between">
                 <Label htmlFor={`exp-desc-${index}`}>Beskrivning</Label>
                 {aiEnabled && (
-                  <button
-                    type="button"
-                    onClick={() => handleImproveDescription(index)}
-                    disabled={aiLoadingIdx[index]}
-                    className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 disabled:opacity-50"
-                  >
-                    <Wand2 className="h-3 w-3" />
-                    {aiLoadingIdx[index] ? 'Förbättrar…' : 'Förbättra'}
-                  </button>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+                      Förslag på CV-tips · under utveckling
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleImproveDescription(index)}
+                      disabled={aiLoadingIdx[index]}
+                      className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 disabled:opacity-50"
+                    >
+                      <Wand2 className="h-3 w-3" />
+                      {aiLoadingIdx[index] ? 'Förbättrar…' : 'Förbättra'}
+                    </button>
+                  </div>
                 )}
               </div>
               <textarea
@@ -400,7 +405,7 @@ export default function ExperienceForm({ cvId, initialData, language = 'sv', isG
               {aiEnabled && aiPrompts[index] && (
                 <details className="mt-2 text-xs text-gray-500 border border-purple-100 rounded-md">
                   <summary className="cursor-pointer px-3 py-2 font-medium text-purple-700 select-none">
-                    Visa prompt (dev)
+                    Förslag på CV-tips – prompt under utveckling
                   </summary>
                   <div className="px-3 pb-3 space-y-2">
                     <div>

@@ -6,15 +6,24 @@ import type { AIProfilePayload, AIResult } from '@/types'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-const SYSTEM_PROMPT = `Du skriver profiltexter till svenska eller engelska CV:n. Skriv alltid på det språk du ombeds skriva på.
+const SYSTEM_PROMPT = `Du är en erfaren rekryterare och karriärhandledare inom Rusta och Matcha. Du hjälper deltagare att skriva ATS-optimerade profiltexter på svenska eller engelska. Skriv alltid på det språk du ombeds skriva på.
 
-REGLER:
-- Exakt 3-4 meningar. Aldrig mer, aldrig mindre.
+NONSENSE-DETEKTION — kontrollera ALLTID "Nuvarande text" först:
+- Om texten är meningslös (upprepade ord, slumpmässiga tecken, teststrängar, obegriplig text): svara ENBART med exakt detta format (ingen annan text):
+  [TIPS] Din profiltext verkar inte beskriva din bakgrund. Försök rikta texten mot den tjänst du söker och beskriv din faktiska erfarenhet och kompetens.
+- Generera ALDRIG en profiltext om nuvarande text är nonsense — visa bara [TIPS]-meddelandet.
+
+NÄR TEXTEN ÄR GILTIG — generera ATS-optimerad profiltext:
+- Exakt 3 meningar. Aldrig mer, aldrig mindre.
+- Mening 1: yrkesidentitet + antal års erfarenhet eller bransch (konkret).
+- Mening 2: en till två specifika kompetenser eller verktyg från CV-datan.
+- Mening 3: vad kandidaten söker eller tillför — kopplat till branschen.
 - Aktiva verb. Aldrig passiv form.
-- Förbjudna ord: driven, social, flexibel, passionerad, engagerad, noggrann, lösningsorienterad, ansvarstagande.
-- Inga tomma påståenden. Bara vad datan bevisar.
-- Om data är knapphändig: skriv konkret utifrån det som finns. Hitta aldrig på fakta.
-- Svara ENBART med profiltext. Inget annat.`
+- Förbjudna ord: driven, social, flexibel, passionerad, engagerad, noggrann, lösningsorienterad, ansvarstagande, motiverad, positiv, teamspelare.
+- Inkludera branschspecifika nyckelord från erfarenhet och utbildning — ATS skannar efter dessa.
+- Inga tomma påståenden. Bara vad CV-datan bevisar.
+- Hitta aldrig på fakta som inte finns i datan.
+- Svara ENBART med profiltext eller [TIPS]-meddelande. Inget annat.`
 
 function err(message: string, status = 500): NextResponse {
   const body: AIResult = { result: '', error: message }
@@ -29,7 +38,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return err('Ogiltig förfrågan.', 400)
   }
 
-  const { language, cvId, guestData } = body
+  const { language, currentSummary, cvId, guestData } = body
 
   let headline: string | null = null
   let experiences: Array<{ job_title: string | null; employer: string | null; description: string | null }> = []
@@ -87,6 +96,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }).filter(Boolean).join(', ')
 
   const userPrompt = `Skriv en profiltext på ${language === 'sv' ? 'svenska' : 'engelska'}.
+Nuvarande text: ${currentSummary?.trim() || 'ingen'}
 Yrkestitel: ${headline ?? 'ej angiven'}
 Erfarenhet (max 3):
 ${expLines || 'ingen'}

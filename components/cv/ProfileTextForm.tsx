@@ -62,8 +62,8 @@ export default function ProfileTextForm({ cvId, initialSummary, language = 'sv',
 
     try {
       const payload: AIProfilePayload = isGuest && guestContext
-        ? { language, guestData: guestContext }
-        : { language, cvId }
+        ? { language, currentSummary: summary, guestData: guestContext }
+        : { language, currentSummary: summary, cvId }
 
       const res = await fetch('/api/ai/profile', {
         method: 'POST',
@@ -79,8 +79,12 @@ export default function ProfileTextForm({ cvId, initialSummary, language = 'sv',
         return
       }
 
-      setValue('summary', data.result, { shouldDirty: true })
-      setAiMessage('Förslag genererat — redigera gärna texten.')
+      if (data.result.startsWith('[TIPS]')) {
+        setAiMessage(data.result.replace('[TIPS]', '').trim())
+      } else {
+        setValue('summary', data.result, { shouldDirty: true })
+        setAiMessage('Förslag genererat — redigera gärna texten.')
+      }
       if (data.systemPrompt && data.userPrompt) {
         setAiPrompts({ system: data.systemPrompt, user: data.userPrompt })
       }
@@ -131,17 +135,24 @@ export default function ProfileTextForm({ cvId, initialSummary, language = 'sv',
           </p>
 
           {aiEnabled && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleGenerateProfile}
-              disabled={aiLoading}
-              className="mb-3 text-purple-600 border-purple-200 hover:bg-purple-50 gap-2"
-            >
-              <Sparkles className="h-4 w-4" />
-              {aiLoading ? 'Genererar…' : 'Generera förslag'}
-            </Button>
+            <div className="mb-3 space-y-1">
+              <span className="inline-block text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5">
+                Förslag på CV-tips · prompt under utveckling
+              </span>
+              <div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateProfile}
+                  disabled={aiLoading}
+                  className="text-purple-600 border-purple-200 hover:bg-purple-50 gap-2"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  {aiLoading ? 'Genererar…' : 'Generera förslag'}
+                </Button>
+              </div>
+            </div>
           )}
 
           <textarea
@@ -164,14 +175,16 @@ export default function ProfileTextForm({ cvId, initialSummary, language = 'sv',
           </div>
 
           {aiMessage && (
-            <p className="text-xs text-purple-600 mt-1">{aiMessage}</p>
+            <p className={`text-xs mt-1 ${aiMessage.toLowerCase().includes('tips') || aiMessage.toLowerCase().includes('försök') ? 'text-amber-700 bg-amber-50 border border-amber-200 rounded p-2' : 'text-purple-600'}`}>
+              {aiMessage}
+            </p>
           )}
 
           {/* Dev mode: expandable prompt panel */}
           {aiEnabled && aiPrompts && (
             <details className="mt-3 text-xs text-gray-500 border border-purple-100 rounded-md">
               <summary className="cursor-pointer px-3 py-2 font-medium text-purple-700 select-none">
-                Visa prompt (dev)
+                Förslag på CV-tips – prompt under utveckling
               </summary>
               <div className="px-3 pb-3 space-y-2">
                 <div>
