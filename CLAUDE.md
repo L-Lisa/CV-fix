@@ -221,23 +221,55 @@ const form = useForm<z.infer<typeof schema>>({
 
 ### Error Handling
 
+The repo uses a **discriminated-union result type** from Server Actions and API routes. Errors never throw across the action boundary — they return a `{ success: false }` shape the caller can pattern-match. This is the canonical pattern; do not invent a new one.
+
 ```typescript
-// OK: try/catch in all Server Actions and API routes
-export async function updateCV(cvId: string, data: Partial<CV>) {
-  try {
-    const supabase = createClient()
-    const { error } = await supabase.from('cvs').update(data).eq('id', cvId)
-    if (error) throw error
-    return { success: true }
-  } catch (err) {
-    console.error('updateCV failed:', err)
-    return { success: false, error: 'Kunde inte spara ändringar' }
+// types/index.ts
+export type SaveResult =
+  | { success: true }
+  | { success: false; error: string }
+
+export type CVActionResult =
+  | { success: true; cvId: string }
+  | { success: false; error: string }
+```
+
+```typescript
+// OK: Server Action returning the union
+export async function updateCVSettings(
+  cvId: string,
+  layout: CVLayout,
+  accentColor: string
+): Promise<SaveResult> {
+  const supabase = createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Inte inloggad' }
+
+  const { error } = await supabase
+    .from('cvs')
+    .update({ layout, accent_color: accentColor })
+    .eq('id', cvId)
+    .eq('user_id', user.id)
+
+  if (error) {
+    console.error('updateCVSettings failed:', error.message)
+    return { success: false, error: 'Det gick inte att spara. Försök igen.' }
   }
+
+  return { success: true }
 }
 ```
 
-Note: UI error messages shown to users must be in Swedish.
-Code-level logs and thrown errors should be in English.
+Rules:
+- **Return, don't throw**, across Server Action / API route boundaries.
+- **UI error messages: Swedish, actionable.** ("Det gick inte att spara. Försök igen.", not "Internal error.")
+- **Log in English** with the action name as prefix: `console.error('updateCVSettings failed:', error.message)`. Never log the user-facing Swedish string — it's not searchable.
+- **Don't leak DB error text** to users. Log it for debugging, return a friendly Swedish message.
+- **Validate ownership before mutating.** Pattern: `auth.getUser()` → row check (`.eq('user_id', user.id)` in the same query, or a separate ownership check for coach paths).
+- **AI routes** add a fourth path: credit-exhaustion detection returns `'Tjänsten är tillfälligt otillgänglig — försök igen om en stund.'` (see `app/api/ai/*/route.ts` for the canonical implementation).
+
+Tests should cover both `{ success: true }` and `{ success: false }` branches for any action that has both. See `lib/actions/*.test.ts` for the mocking pattern.
 
 ---
 
