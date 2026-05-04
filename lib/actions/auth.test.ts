@@ -54,8 +54,20 @@ vi.mock('next/navigation', () => ({
   redirect: vi.fn(),
 }))
 
+// In-memory cookie jar for next/headers. Lets us assert that
+// requestPasswordReset sets the marker cookie consumed by /auth/callback.
+const cookieJar = new Map<string, string>()
+vi.mock('next/headers', () => ({
+  cookies: () => ({
+    set: (name: string, value: string) => cookieJar.set(name, value),
+    get: (name: string) =>
+      cookieJar.has(name) ? { value: cookieJar.get(name)! } : undefined,
+    delete: (name: string) => cookieJar.delete(name),
+  }),
+}))
+
 // Import AFTER mocks.
-import { requestPasswordReset, updatePassword } from './auth'
+import { requestPasswordReset, updatePassword, RESET_PENDING_COOKIE } from './auth'
 
 beforeEach(() => {
   setMockState({
@@ -66,6 +78,7 @@ beforeEach(() => {
     updateUserCalls: [],
     signOutCalls: 0,
   })
+  cookieJar.clear()
   process.env.NEXT_PUBLIC_SITE_URL = 'http://localhost:3000'
 })
 
@@ -78,23 +91,29 @@ describe('requestPasswordReset', () => {
     return f
   }
 
-  it('returns success and calls resetPasswordForEmail with the canonical callback URL', async () => {
+  it('returns success and calls resetPasswordForEmail with a query-free callback URL', async () => {
     const result = await requestPasswordReset(fd('anna@example.com'))
     expect(result.success).toBe(true)
     expect(state.resetPasswordCalls).toHaveLength(1)
     expect(state.resetPasswordCalls[0].email).toBe('anna@example.com')
-    // The redirect must go through /auth/callback so the code-for-session
-    // exchange happens before the user lands on /reset-password.
+    // No query string — must match Supabase whitelist exactly. Destination
+    // signal lives in the cookie set below, not the URL.
     expect(state.resetPasswordCalls[0].redirectTo).toBe(
-      'http://localhost:3000/auth/callback?next=/reset-password'
+      'http://localhost:3000/auth/callback'
     )
   })
 
-  it('rejects an invalid email (Zod) and does NOT call Supabase', async () => {
+  it('sets the cv_reset_pending cookie so /auth/callback can route to /reset-password', async () => {
+    await requestPasswordReset(fd('anna@example.com'))
+    expect(cookieJar.get(RESET_PENDING_COOKIE)).toBe('1')
+  })
+
+  it('rejects an invalid email (Zod), does NOT call Supabase, does NOT set the cookie', async () => {
     const result = await requestPasswordReset(fd('not-an-email'))
     expect(result.success).toBe(false)
     if (!result.success) expect(result.error).toBe('Ange en giltig e-postadress')
     expect(state.resetPasswordCalls).toHaveLength(0)
+    expect(cookieJar.has(RESET_PENDING_COOKIE)).toBe(false)
   })
 
   it('returns success even when Supabase reports an error (do not leak whether the email exists)', async () => {
