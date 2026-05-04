@@ -15,12 +15,13 @@ export default async function LandingPage() {
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
         <span className="font-semibold text-gray-900">CV-byggaren</span>
-        <Link
-          href="/login"
-          className="text-sm text-gray-500 hover:text-gray-900"
+        <span
+          aria-disabled="true"
+          title="Tillfälligt avstängt under testperioden"
+          className="text-sm text-gray-300 cursor-not-allowed select-none"
         >
           Logga in
-        </Link>
+        </span>
       </nav>
 
       {/* Hero */}
@@ -30,27 +31,30 @@ export default async function LandingPage() {
             Skapa ett CV som<br />tar dig vidare
           </h1>
           <p className="mt-4 text-lg text-gray-500">
-            Steg-för-steg-guide, ATS-kontroll och tre layouter — klart på
+            Steg-för-steg-guide, ATS-kontroll och fyra layouter — klart på
             under 20 minuter.
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
             <Link
-              href="/register"
-              className="inline-flex items-center justify-center rounded-lg bg-gray-900 px-6 py-3 text-sm font-medium text-white hover:bg-gray-700"
-            >
-              Skapa konto
-            </Link>
-            <Link
               href="/cv/guest"
-              className="inline-flex items-center justify-center rounded-lg border border-gray-300 px-6 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="inline-flex items-center justify-center rounded-lg bg-gray-900 px-6 py-3 text-sm font-medium text-white hover:bg-gray-700"
             >
               Starta utan konto
             </Link>
+            <span
+              aria-disabled="true"
+              title="Tillfälligt avstängt under testperioden"
+              className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50 px-6 py-3 text-sm font-medium text-gray-400 cursor-not-allowed select-none"
+            >
+              Skapa konto
+            </span>
           </div>
 
-          <p className="mt-6 text-xs text-gray-400">
-            Inget konto krävs — ditt CV sparas tillfälligt i din webbläsare.
+          <p className="mt-6 text-sm text-gray-600 leading-relaxed">
+            Detta är en testversion — du är välkommen att testa appen genom
+            att fylla i formuläret och ladda ned CV:t i PDF-format. Ingen
+            information sparas.
           </p>
         </div>
       </div>
@@ -65,7 +69,7 @@ export default async function LandingPage() {
             </p>
           </div>
           <div>
-            <p className="font-medium text-gray-900 text-sm">3 layouter</p>
+            <p className="font-medium text-gray-900 text-sm">4 layouter</p>
             <p className="text-xs text-gray-500 mt-1">
               Välj den stil som passar din bransch
             </p>
