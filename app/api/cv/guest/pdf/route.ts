@@ -3,6 +3,7 @@ import { renderToBuffer } from '@react-pdf/renderer'
 import Layout1 from '@/components/pdf/Layout1'
 import Layout2 from '@/components/pdf/Layout2'
 import Layout3 from '@/components/pdf/Layout3'
+import Layout4 from '@/components/pdf/Layout4'
 import { assembleGuestFullCV, type GuestCV } from '@/lib/guest/storage'
 import { validateCV } from '@/lib/ats/validate'
 import { createElement, type ReactElement } from 'react'
@@ -28,7 +29,10 @@ export async function POST(request: NextRequest) {
   }
 
   const LayoutComponent =
-    guestCV.layout === 2 ? Layout2 : guestCV.layout === 3 ? Layout3 : Layout1
+    guestCV.layout === 2 ? Layout2
+      : guestCV.layout === 3 ? Layout3
+      : guestCV.layout === 4 ? Layout4
+      : Layout1
 
   let buffer: Buffer
   try {

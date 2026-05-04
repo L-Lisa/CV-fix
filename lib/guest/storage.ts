@@ -10,12 +10,12 @@ import type {
   VolunteeringValues,
   OtherEntryValues,
 } from '@/lib/validation/cv'
-import type { FullCV, CV, CVPersonalInfo, CVProfile, CVExperience, CVEducation, CVSkill, CVLanguageEntry, CVHobbies, CVVolunteering, CVOther } from '@/types'
+import type { FullCV, CV, CVLayout, CVPersonalInfo, CVProfile, CVExperience, CVEducation, CVSkill, CVLanguageEntry, CVHobbies, CVVolunteering, CVOther } from '@/types'
 
 export interface GuestCV {
   title: string
   language: 'sv' | 'en'
-  layout: 1 | 2 | 3
+  layout: CVLayout
   accentColor: string
   personalInfo: PersonalInfoValues | null
   profile: string | null

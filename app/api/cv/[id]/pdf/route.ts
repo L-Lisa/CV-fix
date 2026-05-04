@@ -5,6 +5,7 @@ import { getFullCV } from '@/lib/queries/cv'
 import Layout1 from '@/components/pdf/Layout1'
 import Layout2 from '@/components/pdf/Layout2'
 import Layout3 from '@/components/pdf/Layout3'
+import Layout4 from '@/components/pdf/Layout4'
 import { createElement, type ReactElement } from 'react'
 import type { DocumentProps } from '@react-pdf/renderer'
 import type { CVLayout } from '@/types'
@@ -46,10 +47,12 @@ export async function GET(
 
   // Parse layout from query param
   const rawLayout = parseInt(request.nextUrl.searchParams.get('layout') ?? '', 10)
-  const layout: CVLayout = rawLayout === 2 ? 2 : rawLayout === 3 ? 3 : 1
+  const layout: CVLayout =
+    rawLayout === 2 ? 2 : rawLayout === 3 ? 3 : rawLayout === 4 ? 4 : 1
 
   // Select the correct layout component
-  const LayoutComponent = layout === 2 ? Layout2 : layout === 3 ? Layout3 : Layout1
+  const LayoutComponent =
+    layout === 2 ? Layout2 : layout === 3 ? Layout3 : layout === 4 ? Layout4 : Layout1
 
   let buffer: Buffer
   try {

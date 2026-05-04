@@ -1,0 +1,316 @@
+// Layout 4 — Harvard / Ivy League. Single-column, B&W, Times serif.
+// Centered name and contact, full-width section rules, italic employer.
+// ATS-safe: text-content order is title → employer → description; the
+// right-aligned date is a flex sibling on the same row, not a column.
+
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
+import type { FullCV } from '@/types'
+import {
+  formatExpRange,
+  formatEduRange,
+  formatYearRange,
+  EDUCATION_LEVEL_LABELS,
+  LANGUAGE_LEVEL_LABELS,
+  EXP_TYPE_LABELS,
+} from './shared'
+
+const styles = StyleSheet.create({
+  page: {
+    fontFamily: 'Times-Roman',
+    fontSize: 10.5,
+    color: '#111111',
+    paddingTop: 56,
+    paddingBottom: 56,
+    paddingHorizontal: 56,
+  },
+  // Header — centered, the Ivy hallmark.
+  name: {
+    fontSize: 22,
+    fontFamily: 'Times-Bold',
+    textAlign: 'center',
+    letterSpacing: 1.2,
+    marginBottom: 4,
+  },
+  headline: {
+    fontSize: 11,
+    fontFamily: 'Times-Italic',
+    textAlign: 'center',
+    color: '#333333',
+    marginBottom: 4,
+  },
+  contactLine: {
+    fontSize: 9.5,
+    textAlign: 'center',
+    color: '#333333',
+    marginBottom: 2,
+  },
+  // Section heading — caps with full-width rule below.
+  sectionContainer: {
+    marginTop: 16,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontFamily: 'Times-Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    paddingBottom: 3,
+    marginBottom: 6,
+    borderBottomWidth: 0.75,
+    borderBottomColor: '#111111',
+  },
+  // Body
+  summary: {
+    lineHeight: 1.5,
+    textAlign: 'justify',
+  },
+  // Entry rows
+  entryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 1,
+  },
+  entryTitle: {
+    fontFamily: 'Times-Bold',
+    fontSize: 10.5,
+    flexShrink: 1,
+    paddingRight: 8,
+  },
+  entryEmployer: {
+    fontFamily: 'Times-Italic',
+    fontSize: 10.5,
+    color: '#222222',
+    marginBottom: 2,
+  },
+  entryDate: {
+    fontSize: 10,
+    color: '#444444',
+    flexShrink: 0,
+    marginLeft: 8,
+  },
+  entryDescription: {
+    fontSize: 10,
+    color: '#222222',
+    lineHeight: 1.45,
+    marginTop: 2,
+    marginBottom: 6,
+  },
+  entryBlock: {
+    marginBottom: 8,
+  },
+  // Skills / Languages
+  inlineRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  inlineItem: {
+    fontSize: 10,
+    marginRight: 16,
+    marginBottom: 3,
+  },
+})
+
+interface Props {
+  data: FullCV
+}
+
+export default function Layout4({ data }: Props) {
+  const {
+    cv,
+    personalInfo: pi,
+    profile,
+    experiences,
+    educations,
+    skills,
+    languages,
+    hobbies,
+    volunteering: volunteerings,
+    other,
+  } = data
+  const lang = cv.language
+
+  const fullName = [pi?.first_name, pi?.last_name].filter(Boolean).join(' ')
+  const contactParts = [
+    pi?.phone,
+    pi?.email,
+    pi?.city,
+    pi?.linkedin_url,
+    pi?.github_url,
+    pi?.portfolio_url,
+  ].filter(Boolean) as string[]
+
+  const hasExperiences = experiences.length > 0
+  const hasEducations = educations.length > 0
+  const hasSkills = skills.length > 0
+  const hasLanguages = languages.length > 0
+  const hasHobbies = !!hobbies?.text
+  const hasVolunteering = volunteerings.length > 0
+  const hasOther = other.length > 0
+
+  const SECTION_LABELS = lang === 'sv'
+    ? {
+        profile: 'Profil',
+        experience: 'Arbetslivserfarenhet',
+        education: 'Utbildning',
+        skills: 'Kunskaper',
+        languages: 'Språk',
+        hobbies: 'Intressen',
+        volunteering: 'Volontärarbete',
+        other: 'Övrigt',
+      }
+    : {
+        profile: 'Profile',
+        experience: 'Experience',
+        education: 'Education',
+        skills: 'Skills',
+        languages: 'Languages',
+        hobbies: 'Interests',
+        volunteering: 'Volunteering',
+        other: 'Other',
+      }
+
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        {/* ── Header ── */}
+        {fullName ? <Text style={styles.name}>{fullName}</Text> : null}
+        {pi?.headline ? <Text style={styles.headline}>{pi.headline}</Text> : null}
+        {contactParts.length > 0 && (
+          <Text style={styles.contactLine}>{contactParts.join(' · ')}</Text>
+        )}
+
+        {/* ── Profile ── */}
+        {profile?.summary ? (
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionLabel}>{SECTION_LABELS.profile}</Text>
+            <Text style={styles.summary}>{profile.summary}</Text>
+          </View>
+        ) : null}
+
+        {/* ── Experience ── */}
+        {hasExperiences && (
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionLabel}>{SECTION_LABELS.experience}</Text>
+            {experiences.map((exp) => {
+              const typeLabel = exp.type ? EXP_TYPE_LABELS[exp.type]?.[lang] : null
+              const employerLine = [exp.employer, exp.city, typeLabel]
+                .filter(Boolean)
+                .join(', ')
+              return (
+                <View key={exp.id} style={styles.entryBlock}>
+                  <View style={styles.entryRow}>
+                    <Text style={styles.entryTitle}>{exp.job_title}</Text>
+                    <Text style={styles.entryDate}>{formatExpRange(exp, lang)}</Text>
+                  </View>
+                  {employerLine ? (
+                    <Text style={styles.entryEmployer}>{employerLine}</Text>
+                  ) : null}
+                  {exp.description ? (
+                    <Text style={styles.entryDescription}>{exp.description}</Text>
+                  ) : null}
+                </View>
+              )
+            })}
+          </View>
+        )}
+
+        {/* ── Education ── */}
+        {hasEducations && (
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionLabel}>{SECTION_LABELS.education}</Text>
+            {educations.map((edu) => {
+              const levelLabel = edu.level ? EDUCATION_LEVEL_LABELS[edu.level] : null
+              const subLine = [edu.institution, levelLabel].filter(Boolean).join(', ')
+              return (
+                <View key={edu.id} style={styles.entryBlock}>
+                  <View style={styles.entryRow}>
+                    <Text style={styles.entryTitle}>{edu.program}</Text>
+                    <Text style={styles.entryDate}>{formatEduRange(edu, lang)}</Text>
+                  </View>
+                  {subLine ? (
+                    <Text style={styles.entryEmployer}>{subLine}</Text>
+                  ) : null}
+                  {edu.description ? (
+                    <Text style={styles.entryDescription}>{edu.description}</Text>
+                  ) : null}
+                </View>
+              )
+            })}
+          </View>
+        )}
+
+        {/* ── Skills ── */}
+        {hasSkills && (
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionLabel}>{SECTION_LABELS.skills}</Text>
+            <View style={styles.inlineRow}>
+              {skills.map((s) => (
+                <Text key={s.id} style={styles.inlineItem}>
+                  {s.name}{s.level ? ` (${s.level}/5)` : ''}
+                </Text>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* ── Languages ── */}
+        {hasLanguages && (
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionLabel}>{SECTION_LABELS.languages}</Text>
+            <View style={styles.inlineRow}>
+              {languages.map((l) => {
+                const levelLabel = l.level ? LANGUAGE_LEVEL_LABELS[l.level]?.[lang] : null
+                return (
+                  <Text key={l.id} style={styles.inlineItem}>
+                    {l.language}{levelLabel ? ` – ${levelLabel}` : ''}
+                  </Text>
+                )
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* ── Hobbies ── */}
+        {hasHobbies && (
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionLabel}>{SECTION_LABELS.hobbies}</Text>
+            <Text style={styles.summary}>{hobbies!.text}</Text>
+          </View>
+        )}
+
+        {/* ── Volunteering ── */}
+        {hasVolunteering && (
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionLabel}>{SECTION_LABELS.volunteering}</Text>
+            {volunteerings.map((v) => (
+              <View key={v.id} style={styles.entryBlock}>
+                <View style={styles.entryRow}>
+                  <Text style={styles.entryTitle}>{v.role}</Text>
+                  <Text style={styles.entryDate}>
+                    {formatYearRange(v.start_year, v.end_year, v.is_current, lang)}
+                  </Text>
+                </View>
+                <Text style={styles.entryEmployer}>{v.organisation}</Text>
+                {v.description ? (
+                  <Text style={styles.entryDescription}>{v.description}</Text>
+                ) : null}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* ── Other ── */}
+        {hasOther && (
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionLabel}>{SECTION_LABELS.other}</Text>
+            {other.map((o) => (
+              <Text key={o.id} style={styles.inlineItem}>
+                {o.label ? `${o.label}: ` : ''}{o.text}
+              </Text>
+            ))}
+          </View>
+        )}
+      </Page>
+    </Document>
+  )
+}

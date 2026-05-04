@@ -1,11 +1,12 @@
 # PRD – CV-byggare för jobbcoacher (Rusta och Matcha)
-**Version:** 1.2
-**Status:** Aktiv – MVP shippad 2026-03-15. AI-assistans tillagd som scope-utökning 2026-03-15 → 2026-03-20.
-**Senast uppdaterad:** 2026-05-04
+**Version:** 1.3
+**Status:** Aktiv – MVP shippad 2026-03-15. AI-assistans tillagd som scope-utökning 2026-03-15 → 2026-03-20. Beta-testperiod startar 2026-05-05 (inloggning tillfälligt avstängd i UI; "Starta utan konto" är primär ingång).
+**Senast uppdaterad:** 2026-05-05
 
 > **Historik**
 > - v1.0 → v1.1 (2026-03-14): MVP-scope låst.
 > - v1.1 → v1.2 (2026-05-04): MVP markerad som levererad. AI-assistans (avsnitt 15) dokumenterad som scope-utökning utöver original-MVP. Tech stack (avsnitt 4) uppdaterad med Anthropic SDK. Öppna frågor (avsnitt 14) ompröade.
+> - v1.2 → v1.3 (2026-05-05): Layout 4 (Harvard / Ivy League) tillagd. Beta-testperiod inledd: inloggning och kontoregistrering tillfälligt avstängda i UI, koden ligger kvar bakom dimmade CTA:er. Guest-flödet ("Starta utan konto") är permanent förstaval — bug i middleware som omdirigerade `/cv/guest` till `/login` är åtgärdad.
 
 ---
 
@@ -116,7 +117,7 @@ Bygga ett enkelt, tryggt och professionellt CV-verktyg primärt för deltagare i
    → Steg 6: Finputsning & ATS-check
 
 5. Finputsning
-   → Välj layout (1–3)
+   → Välj layout (1–4)
    → Förhandsvisning
    → ATS-check panel
 
@@ -224,6 +225,7 @@ Bygga ett enkelt, tryggt och professionellt CV-verktyg primärt för deltagare i
 | 1 | Enkel svartvit, en kolumn | ✅ | ❌ |
 | 2 | En kolumn med valbar accentfärg | ✅ | ✅ (valfritt) |
 | 3 | Utökad med extra sektioner, en kolumn | ✅ | ✅ (valfritt) |
+| 4 | Harvard / Ivy League — centrerad rubrik, Times-serif, svartvit | ✅ | ❌ |
 
 **Kritisk regel:** Alla layouter renderas som en-kolumns-PDF. Visuell styling (färg, typografi) appliceras men strukturen förblir ATS-säker. Ingen tvåkolumns-layout i MVP.
 

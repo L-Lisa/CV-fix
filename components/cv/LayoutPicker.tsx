@@ -9,6 +9,7 @@ const LAYOUTS: Array<{ value: CVLayout; label: string; description: string }> = 
   { value: 1, label: 'Layout 1', description: 'Enkel, svartvit' },
   { value: 2, label: 'Layout 2', description: 'Färgad rubrik' },
   { value: 3, label: 'Layout 3', description: 'Med sidofält' },
+  { value: 4, label: 'Layout 4', description: 'Harvard / Ivy League' },
 ]
 
 const PRESET_COLORS = [

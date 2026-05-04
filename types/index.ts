@@ -16,7 +16,7 @@ export interface Profile {
 // ─── CV Document ─────────────────────────────────────────────────────────────
 
 export type CVLanguage = 'sv' | 'en'
-export type CVLayout = 1 | 2 | 3
+export type CVLayout = 1 | 2 | 3 | 4
 export type CVStatus = 'draft' | 'complete'
 
 export interface CV {

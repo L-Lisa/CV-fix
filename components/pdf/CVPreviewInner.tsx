@@ -8,6 +8,7 @@ import type { FullCV, CVLayout } from '@/types'
 import Layout1 from './Layout1'
 import Layout2 from './Layout2'
 import Layout3 from './Layout3'
+import Layout4 from './Layout4'
 
 interface Props {
   fullCV: FullCV
@@ -17,6 +18,7 @@ interface Props {
 function CVDoc({ fullCV, layout }: Props) {
   if (layout === 2) return <Layout2 data={fullCV} />
   if (layout === 3) return <Layout3 data={fullCV} />
+  if (layout === 4) return <Layout4 data={fullCV} />
   return <Layout1 data={fullCV} />
 }
 
