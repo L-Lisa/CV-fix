@@ -1,8 +1,8 @@
 # CLAUDE.md - Instructions for Claude in Cursor
 
 Read this entire file before writing any code.
-Then read AGENTS.md and WORKFLOW.md.
-All three files must be in your active context on every task.
+Then read PRD.md, WORKFLOW.md, and AGENTS.md.
+All four files must be in your active context on every task.
 
 ---
 
@@ -403,7 +403,7 @@ if (!link) return new Response('Forbidden', { status: 403 })
 ## Database Rules
 
 - RLS is ON for every table - write policies before inserting any data
-- Migrations go in `/supabase/migrations/` with format: `20240314_descriptive_name.sql`
+- Migrations go in `/supabase/migrations/` with format: `YYYYMMDD_descriptive_name.sql` (e.g. `20260314_initial_schema.sql`, `20260504_ai_request_log.sql`)
 - Never modify an existing migration - always create a new one
 - Regenerate types after every migration
 
@@ -444,24 +444,6 @@ UI never drives data structure.
 
 ---
 
-## Session Start Checklist
+## Starting a session
 
-Run this at the start of every Cursor session:
-
-```bash
-pwd
-git status
-git log --oneline -5
-supabase status
-npx tsc --noEmit
-```
-
-Only start new work if git is clean and TypeScript compiles.
-
----
-
-<!-- "First Task in a New Project" bootstrap section removed 2026-05-04: project is past Phase 1. See git history for the original setup. -->
-
-## Recent Activity Pointer
-
-The codebase is past MVP. Phases 1–7 (PRD §5 MVP) and Phase 8 (PRD §15 AI) are shipped. When picking up work after a break, run the **Pickup Checklist** in WORKFLOW.md before starting anything new.
+The canonical pre-work checklist lives in `WORKFLOW.md` → **Pickup Checklist**. Run that. The codebase is past MVP — Phases 1–7 (PRD §5) and Phase 8 (PRD §15 AI) are shipped — so no new-project bootstrap is needed.

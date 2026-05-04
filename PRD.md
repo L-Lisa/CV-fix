@@ -41,7 +41,7 @@ Bygga ett enkelt, tryggt och professionellt CV-verktyg primärt för deltagare i
 ## 3. Affärsmodell
 
 **MVP-hypotes:** Gratisverktyg för deltagare. Coachen administrerar via sin organisation.
-**Status:** TBD – utvärderas efter MVP-lansering.
+**Status:** Öppen fråga — se §14 (särskilt relevant nu när AI-anrop kostar).
 
 ---
 
@@ -102,9 +102,10 @@ Bygga ett enkelt, tryggt och professionellt CV-verktyg primärt för deltagare i
 2. Välj CV-språk
    → Svenska | English
 
-3. Välj yrkesinriktning (valfritt)
+3. (Skjuts till V1.1) Välj yrkesinriktning (valfritt)
    → IT/Tech | Vård/Omsorg | Handel/Service | Transport/Logistik
      Kontor/Admin | Ledarskap | Student/Ungdom | Annat
+   → Ej implementerad i MVP. Se §14.
 
 4. Formulärflöde (steg med tydlig progress)
    → Steg 1: Personuppgifter
@@ -179,7 +180,7 @@ Bygga ett enkelt, tryggt och professionellt CV-verktyg primärt för deltagare i
 - Ort/Stad, Region
 - LinkedIn-URL, GitHub-URL, Portfolio-URL, Annan URL
 - Körkort (text eller dropdown)
-- Foto (photo_url) – valfritt, stöds i layout 2 och 3
+- Foto (photo_url) – valfritt, designat för layout 2 och 3 (uppladdnings-UI implementeras i V1.1, se §14 "Fotouppladdning"). Databaskolumnen finns redan.
 
 **Profiltext**
 - Fritext, rekommenderat 3–5 meningar
@@ -425,39 +426,42 @@ cv_comments (
 
 ## 12. Projektstruktur (Next.js 14)
 
+Den auktoritativa, aktuella layouten finns i `CLAUDE.md` → "Project Structure". Sammanfattning:
+
 ```
 /app
-  /(auth)
-    /login/page.tsx
-    /register/page.tsx
-  /(app)
-    /dashboard/page.tsx          → användarens CVn
-    /cv/[id]/edit/page.tsx       → formulär + preview
-    /cv/[id]/preview/page.tsx    → fullscreen preview
-    /coach
-      /dashboard/page.tsx        → lista deltagare
-      /cv/[id]/page.tsx          → redigera/kommentera
-  /api
-    /cv/export/pdf/route.ts      → React-PDF generering
-    /coach/link/route.ts         → skapa coach_link via e-post
+  /(auth)/login | /register                        → Supabase Auth
+  /(app)/dashboard                                 → användarens CV-lista
+  /(app)/cv/new                                    → CV-skapande
+  /(app)/cv/[id]/edit + /[step]                    → formulärflöde
+  /(app)/cv/[id]/preview                           → fullscreen preview
+  /(app)/coach/dashboard                           → kopplade deltagare
+  /(app)/coach/cv/[id]                             → kommentera / redigera
+  /(app)/coach/participant/[userId]                → deltagaröversikt
+  /(guest)/cv/guest + /[step] + /preview           → gästflöde (localStorage)
+  /auth/callback                                   → email-bekräftelse
+  /api/cv/[id]/pdf, /cv/guest/pdf                  → React-PDF export
+  /api/ai/profile | /description | /skills | /keywords
+                                                   → AI-assistans (§15)
 
-/components
-  /cv-form                       → steg-komponenter per sektion
-  /cv-preview                    → renderad CV-mall (React-PDF)
-  /coach                         → kommentars-UI, deltagarlistor
-  /ui                            → shadcn/ui komponenter
+/components/cv-form, /cv-preview, /cv, /coach, /pdf, /guest, /auth, /ui
 
 /lib
-  /supabase
-    /client.ts                   → browser client
-    /server.ts                   → server client
-    /middleware.ts               → auth middleware
-  /pdf                           → React-PDF templates
-  /validation                    → Zod schemas + ATS-logik
+  /supabase    → browser/server clients + middleware
+  /actions     → Server Actions (auth, cv, coach, guest)
+  /queries     → Server-side reads
+  /ai          → rate-limit + input-cap helpers
+  /pdf         → React-PDF templates
+  /ats         → ATS-validering (§9)
+  /validation  → Zod schemas
+  /guest       → localStorage helpers
 
-/types
-  /index.ts                      → alla TypeScript-typer
+/supabase/migrations/    → en fil per ändring (YYYYMMDD_*.sql)
+/types/index.ts          → ALLA app-typer
+/types/database.ts       → genererad av Supabase CLI (rör inte manuellt)
 ```
+
+**Notera:** Coach–deltagar-länkning är en Server Action (`lib/actions/coach.ts`), inte en API-route. Tidigare versioner av detta dokument visade ett `/api/coach/link/route.ts` som aldrig implementerats.
 
 ---
 
@@ -474,7 +478,8 @@ cv_comments (
 ## 14. Öppna frågor (att besluta i V1.1)
 
 - [ ] Affärsmodell och betalvägg (särskilt relevant nu när AI-anrop kostar)
-- [ ] Rate limiting / kvot per användare för AI-endpoints
+- [ ] Yrkesinriktningsval i flödet (§6.1 steg 3) — pre-fill defaults baserat på vald bransch
+- [ ] Rate limiting / kvot per användare för AI-endpoints (delvis löst 2026-05-04: 50/h via `lib/ai/rate-limit.ts`; återstår: telemetri och eventuell rollbaserad differentiering)
 - [ ] Spelifiering (XP, badges) – design och implementation
 - [ ] DOCX-export – bibliotek och format
 - [ ] Fotouppladdning – lagring i Supabase Storage

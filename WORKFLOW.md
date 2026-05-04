@@ -138,9 +138,14 @@ ACTION REQUIRED: User must choose before I continue.
 
 ## Git Workflow
 
-### Branch Strategy (MVP)
+### Branch Strategy
 
-Work directly on `main` for MVP. No feature branches unless the user requests them.
+**Default: work directly on `main`.** Solo project; the `pre-push` hook + AUDIT.md gate every push, so the review surface a feature branch would provide doesn't exist yet.
+
+**Use a feature branch when:**
+- An audit-discovered fix lands (per AUDIT.md, branch name `audit/fix-YYYY-MM-DD-<slug>`).
+- A change is risky enough to want a sandbox (e.g. preview-bundle perf rewrite, schema migration with backfill, dependency major bump).
+- A second reviewer joins the project — at which point we revisit the default.
 
 ### Remote
 
@@ -216,7 +221,7 @@ npx supabase gen types typescript --project-id YOUR_PROJECT_ID > types/database.
 
 # Commit the migration and updated types together
 git add supabase/migrations/ types/database.ts
-git commit -m "[dev] Add migration: descriptive_name_here"
+git commit -m "feat(db): add migration: descriptive_name_here"
 git push origin main
 ```
 
@@ -284,31 +289,9 @@ Use this when the three roles disagree:
 
 ---
 
-## Session Start Checklist
+<!-- Session Start Checklist consolidated 2026-05-04 — see "Pickup Checklist" further down. One canonical list. -->
 
-At the start of every new Cursor session, run:
 
-```bash
-# 1. Verify you are in the right directory
-pwd
-
-# 2. Check git status - should be clean
-git status
-git log --oneline -5
-
-# 3. Verify Supabase connection
-supabase status
-
-# 4. TypeScript check on existing code
-npx tsc --noEmit
-
-# 5. Read PRD.md to reorient
-cat PRD.md | head -80
-```
-
-Only start new work if git status is clean and TypeScript compiles.
-
----
 
 ## Feature Development Order
 
