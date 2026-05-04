@@ -67,7 +67,8 @@ vi.mock('next/headers', () => ({
 }))
 
 // Import AFTER mocks.
-import { requestPasswordReset, updatePassword, RESET_PENDING_COOKIE } from './auth'
+import { requestPasswordReset, updatePassword } from './auth'
+import { RESET_PENDING_COOKIE } from '@/lib/auth/cookies'
 
 beforeEach(() => {
   setMockState({

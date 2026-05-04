@@ -1,23 +1,15 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { setResetPendingCookie } from '@/lib/auth/cookies'
 import {
   registerSchema,
   loginSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
 } from '@/lib/validation/auth'
-
-// Marker cookie set when the user requests a password reset. The /auth/callback
-// route reads this after a successful code exchange and routes to
-// /reset-password instead of the default /dashboard. We use a cookie rather
-// than a ?next= query param on redirectTo because Supabase's URL whitelist
-// rejects redirect URLs with query strings unless the exact URL is allowed —
-// and we don't want to require a Supabase config change for every flow.
-export const RESET_PENDING_COOKIE = 'cv_reset_pending'
 
 export type AuthActionResult =
   | { success: true; message?: string }
@@ -165,16 +157,7 @@ export async function requestPasswordReset(
   const supabase = createClient()
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
 
-  // Mark this browser session as "expecting a password reset". The
-  // /auth/callback route consumes this cookie after the code exchange and
-  // routes to /reset-password. 30 min covers the time-to-click on the email.
-  cookies().set(RESET_PENDING_COOKIE, '1', {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: 60 * 30,
-  })
+  setResetPendingCookie()
 
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
     // Plain callback URL — must match the Supabase whitelist exactly. No
