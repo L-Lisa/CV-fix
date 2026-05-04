@@ -1,0 +1,50 @@
+#!/bin/sh
+# Pre-push: refuse a push to main without an AUDIT.md ## Log entry for today.
+#
+# Bypass with --no-verify is forbidden by project conventions (CLAUDE.md /
+# WORKFLOW.md). If today's diff is doc-only or test-only and you've decided
+# no audit is needed, add an explicit "### YYYY-MM-DD — docs-only" section
+# to AUDIT.md ## Log. That counts and unblocks the push.
+
+remote="$1"
+url="$2"
+
+TODAY=$(date +%Y-%m-%d)
+AUDIT_FILE="AUDIT.md"
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main)
+      # First-push exemption: if AUDIT.md does not exist yet, allow.
+      if [ ! -f "$AUDIT_FILE" ]; then
+        exit 0
+      fi
+      # Look for today's date as a Log section heading.
+      if grep -qE "^### $TODAY" "$AUDIT_FILE"; then
+        exit 0
+      fi
+
+      cat <<MSG
+✗ Pre-push refused: no AUDIT.md ## Log entry for $TODAY.
+
+The audit must run before pushing to main. Two ways to satisfy this:
+
+  1. Run the audit (ask Claude to follow AUDIT.md against your latest commits)
+     and let it append a "### $TODAY — <commit-range>" section to ## Log.
+
+  2. If today's diff is doc-only / test-only and you've decided no audit is
+     needed, add this section manually:
+
+       ### $TODAY — docs-only
+
+       **Scope:** doc updates, no behavioural diff.
+       **Result:** No audit required.
+
+Then re-run \`git push origin main\`.
+MSG
+      exit 1
+      ;;
+  esac
+done
+
+exit 0
