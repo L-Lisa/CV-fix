@@ -1,7 +1,11 @@
 # PRD – CV-byggare för jobbcoacher (Rusta och Matcha)
-**Version:** 1.1
-**Status:** Aktiv – MVP-scope låst
-**Senast uppdaterad:** 2026-03-14
+**Version:** 1.2
+**Status:** Aktiv – MVP shippad 2026-03-15. AI-assistans tillagd som scope-utökning 2026-03-15 → 2026-03-20.
+**Senast uppdaterad:** 2026-05-04
+
+> **Historik**
+> - v1.0 → v1.1 (2026-03-14): MVP-scope låst.
+> - v1.1 → v1.2 (2026-05-04): MVP markerad som levererad. AI-assistans (avsnitt 15) dokumenterad som scope-utökning utöver original-MVP. Tech stack (avsnitt 4) uppdaterad med Anthropic SDK. Öppna frågor (avsnitt 14) ompröade.
 
 ---
 
@@ -46,28 +50,35 @@ Bygga ett enkelt, tryggt och professionellt CV-verktyg primärt för deltagare i
 | Komponent | Val | Motivering |
 |-----------|-----|------------|
 | Frontend | Next.js 14 (App Router) | Server Components, API Routes, optimal Supabase-integration |
-| Språk | TypeScript | Typsäkerhet, bättre Cursor/Claude-kodhjälp |
+| Språk | TypeScript (strict) | Typsäkerhet, bättre Cursor/Claude-kodhjälp |
 | Styling | Tailwind CSS + shadcn/ui | Snabb UI-utveckling, tillgängliga komponenter |
 | Backend/DB | Supabase | Auth, RLS, realtid, PostgreSQL |
 | PDF-export | React-PDF (via Next.js API Route) | Äkta textbaserad PDF – ATS-säker |
 | Formulär | React Hook Form + Zod | Validering, typsäkerhet, prestanda |
+| AI | Anthropic SDK (`@anthropic-ai/sdk`), modell `claude-sonnet-4-6` | Profil-, beskrivnings-, kompetens- och nyckelordsförslag (avsnitt 15) |
 | Deployment | Vercel | Optimal Next.js-host |
 
 ---
 
-## 5. MVP-scope (låst)
+## 5. MVP-scope (levererad 2026-03-15)
 
-### ✅ Ingår i MVP
-- Registrering / inloggning (Supabase Auth – e-post + lösenord)
+### ✅ Ingår i MVP – levererad
+- Registrering / inloggning (Supabase Auth – e-post + lösenord, med `/auth/callback`)
 - Gästläge (data lever i klienten, varning om att inget sparas)
 - CV-formulär med alla 9 sektioner (se avsnitt 7)
 - Live preview desktop / preview-knapp på mobil
 - ATS-validering (röda hårda fel + gula rekommendationer)
 - PDF-export (React-PDF, textbaserad, ATS-säker)
-- Coach-dashboard: se kopplade deltagares CV:n
+- Coach-dashboard: se kopplade deltagares CV:n + ATS-stats per kort
 - Coach: kommentera per sektion
-- Coach: redigera deltagarens CV direkt
+- Coach: redigera deltagarens CV direkt (per-sektion inline-edit)
+- "Ändrad av coach"-indikation på CV-preview
 - Coach-länkning: deltagaren anger coachens e-post vid registrering
+- Landningssida med hero + CTA
+- Accent-färgväljare och språk-toggle på preview-sidan
+
+### ➕ Tillägg utöver MVP – levererad 2026-03-15 → 2026-03-20
+- AI-assistans i CV-formulär (se avsnitt 15) – opt-in via toggle
 
 ### ❌ Skjuts till V1.1
 - DOCX-export
@@ -462,9 +473,51 @@ cv_comments (
 
 ## 14. Öppna frågor (att besluta i V1.1)
 
-- [ ] Affärsmodell och betalvägg
+- [ ] Affärsmodell och betalvägg (särskilt relevant nu när AI-anrop kostar)
+- [ ] Rate limiting / kvot per användare för AI-endpoints
 - [ ] Spelifiering (XP, badges) – design och implementation
 - [ ] DOCX-export – bibliotek och format
 - [ ] Fotouppladdning – lagring i Supabase Storage
 - [ ] Fler layouter med tvåkolumns-design (kräver ATS-granskning)
 - [ ] Personligt brev-funktion (som cv.se erbjuder)
+- [ ] Spara senaste jobbannons + nyckelordsmatchning per CV (idag är funktionen stateless)
+- [ ] Ska AI-toggle vara opt-in eller opt-out som default?
+
+---
+
+## 15. AI-assistans (tillägg utöver MVP)
+
+**Status:** Levererad 2026-03-15 → 2026-03-20.
+**Modell:** `claude-sonnet-4-6` via `@anthropic-ai/sdk`.
+**Aktivering:** Användaren slår på AI via en toggle i CV-formuläret. State sparas per session (localStorage), inte i databas. Default = av.
+**Säkerhet:** Inloggade flöden verifierar ägarskap via `cvId` + `getFullCV()`. Coach får använda nyckelordsmatchning för CV:n hen är kopplad till via `coach_links`. Gästflöden skickar CV-data direkt i request-body (ingen auth).
+
+### 15.1 AI-funktioner
+
+| # | Funktion | Endpoint | Input | Output | Var i UI |
+|---|----------|----------|-------|--------|----------|
+| 1 | Profilförslag | `POST /api/ai/profile` | nuvarande summary + CV-kontext + språk | 3-meningars ATS-optimerad profiltext, eller `[TIPS]`-meddelande om input är nonsens | Steg 2 (profiltext) |
+| 2 | Beskrivningsförslag | `POST /api/ai/description` | jobbtitel + arbetsgivare + nuvarande beskrivning + språk | 3 punkter med starka verb i preteritum/past tense | Steg 3 (arbetslivserfarenhet) |
+| 3 | Kompetensförslag | `POST /api/ai/skills` | jobbtitlar + utbildning + befintliga kompetenser + språk | JSON-array med 6 specifika kompetenser (4 yrkesspecifika + 2 mjuka) | Steg 5 (kunskaper & färdigheter) |
+| 4 | Nyckelordsmatchning | `POST /api/ai/keywords` | `cvId` + jobbannons (fritext) + språk | JSON-array (max 8) med saknade nyckelord + sektionsförslag | ATS-panel / preview |
+
+### 15.2 Designprinciper
+
+- **Opt-in:** AI är alltid avstängd som default. Användaren slår på den explicit.
+- **Förbjudna ord/fraser i prompts:** Vi blockerar fluffiga buzz-ord (driven, social, flexibel, passionerad, etc.) i profil-prompten för att undvika generisk text som rekryterare ratar.
+- **Nonsense-detektion:** Profil-endpointen returnerar ett `[TIPS]`-meddelande istället för att generera text om input är meningslös – inga fabricerade fakta.
+- **Aldrig hitta på fakta:** Prompts instruerar modellen att bara använda data som faktiskt finns i CV:t.
+- **Språkmedvetenhet:** Alla endpoints tar `language: 'sv' | 'en'` och svarar på rätt språk.
+- **Felmeddelanden på svenska:** Vänliga, åtgärdsinriktade meddelanden. Kreditslut detekteras separat och berättar för användaren att tjänsten är tillfälligt otillgänglig.
+- **Dev-läge:** I dev-miljö visas en expanderbar panel med `systemPrompt` + `userPrompt` så vi kan iterera på prompt engineering.
+
+### 15.3 Säkerhetsmodell
+
+- Inloggad jobbsökare: server hämtar CV via `getFullCV(cvId)` efter `auth.getUser()`-verifiering.
+- Coach: tillåten att anropa `/api/ai/keywords` för CV:n där `coach_links` matchar coach + CV-ägare.
+- Gäst: payload måste innehålla `isGuest: true` eller `guestData` – ingen `cvId`-lookup, ingen DB-access.
+- API-nyckel (`ANTHROPIC_API_KEY`) är server-side only. Aldrig `NEXT_PUBLIC_*`.
+
+### 15.4 Datamodell-konsekvenser
+
+Inga. AI är stateless: ingen ny tabell, ingen kolumnändring. Förslag visas i UI och användaren accepterar/avvisar manuellt. Eventuell historik (vad användaren accepterade) är en V1.1-fråga (se avsnitt 14).

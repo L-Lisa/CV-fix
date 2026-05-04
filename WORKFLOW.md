@@ -73,24 +73,27 @@ If any check fails, fix it before moving to the next sub-task.
 
 ### STEP 4 - COMMIT
 
-Follow this commit format every time:
+Use Conventional Commits. The repo started with `[role]` prefixes during MVP (Phases 1–7) and switched mid-project; both are still valid in `git log`, but new commits use Conventional Commits going forward.
 
 ```bash
-git add -A
-git commit -m "[role] short description of what was done
+git add <specific files>     # avoid `git add -A` to prevent accidental secrets
+git commit -m "type(scope): short description
 
-- bullet point detail
-- bullet point detail"
+- detail
+- detail"
 
 git push origin main
 ```
 
-Role prefix must be one of: `[dev]`, `[ux]`, `[po]`, `[fix]`, `[test]`
+**Allowed types:** `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `style`, `perf`.
+**Common scopes:** `ai`, `ats`, `coach`, `pdf`, `auth`, `ux`, `dev`. Scope is optional.
 
-Examples:
-- `[dev] Add Supabase RLS policies for cv_experiences table`
-- `[ux] Add empty state and loading skeleton to CV form step 3`
-- `[fix] Resolve TypeScript error in PDF export route`
+Examples (from repo history):
+- `feat(ai): keyword matching against job postings for jobseeker and coach`
+- `fix(ai): allow coaches to use keyword matching for linked participants`
+- `feat(ats): add two missing soft warnings from PRD`
+- `refactor: code review fixes — shared types, utils, and consistent error handling`
+- `docs: bump PRD to v1.2 with AI section`
 
 ### STEP 5 - TASK CLOSE
 
@@ -307,57 +310,115 @@ Only start new work if git status is clean and TypeScript compiles.
 
 ---
 
-## Feature Development Order (MVP)
+## Feature Development Order
 
 Work in this sequence. Do not jump ahead.
 
+### MVP (delivered 2026-03-15)
+
 ```
 Phase 1 - Foundation
-  [ ] 1.1 Next.js project setup + dependencies
-  [ ] 1.2 Supabase client setup (client.ts, server.ts, middleware.ts)
-  [ ] 1.3 All SQL migrations + RLS policies
-  [ ] 1.4 TypeScript types generated from database
+  [x] 1.1 Next.js project setup + dependencies
+  [x] 1.2 Supabase client setup (client.ts, server.ts, middleware.ts)
+  [x] 1.3 All SQL migrations + RLS policies (supabase/migrations/20260314_initial_schema.sql)
+  [x] 1.4 TypeScript types generated from database
 
 Phase 2 - Auth
-  [ ] 2.1 Register page (user + coach roles)
-  [ ] 2.2 Login page
-  [ ] 2.3 Auth middleware (protect app routes)
-  [ ] 2.4 Guest mode (localStorage warning)
+  [x] 2.1 Register page (user + coach roles)
+  [x] 2.2 Login page
+  [x] 2.3 Auth middleware (protect app routes)
+  [x] 2.4 Guest mode (localStorage warning)
+  [x] 2.5 Auth callback route (/auth/callback) for email confirmation
 
 Phase 3 - CV Form (core)
-  [ ] 3.1 CV creation flow + routing
-  [ ] 3.2 Step 1: Personal info form
-  [ ] 3.3 Step 2: Profile text form
-  [ ] 3.4 Step 3: Work experience form (repeatable)
-  [ ] 3.5 Step 4: Education form (repeatable)
-  [ ] 3.6 Step 5: Skills, Languages, Other (repeatable)
-  [ ] 3.7 Step navigation + progress indicator
+  [x] 3.1 CV creation flow + routing
+  [x] 3.2 Step 1: Personal info form
+  [x] 3.3 Step 2: Profile text form
+  [x] 3.4 Step 3: Work experience form (repeatable)
+  [x] 3.5 Step 4: Education form (repeatable)
+  [x] 3.6 Step 5: Skills, Languages, Other (repeatable)
+  [x] 3.7 Step navigation + progress indicator
 
 Phase 4 - CV Preview + ATS
-  [ ] 4.1 CV preview component (React-PDF document)
-  [ ] 4.2 Layout 1 (simple, single column)
-  [ ] 4.3 Layout 2 (accent color)
-  [ ] 4.4 Layout 3 (extended sections)
-  [ ] 4.5 ATS validation logic (hard + soft rules)
-  [ ] 4.6 ATS check panel in UI
+  [x] 4.1 CV preview component (React-PDF document)
+  [x] 4.2 Layout 1 (simple, single column)
+  [x] 4.3 Layout 2 (accent color)
+  [x] 4.4 Layout 3 (extended sections)
+  [x] 4.5 ATS validation logic (hard + soft rules)
+  [x] 4.6 ATS check panel in UI
 
 Phase 5 - Export
-  [ ] 5.1 PDF export API route
-  [ ] 5.2 Export UI (download button, blocked state on errors)
+  [x] 5.1 PDF export API route (/api/cv/[id]/pdf, /api/cv/guest/pdf)
+  [x] 5.2 Export UI (download button, blocked state on errors)
 
 Phase 6 - Coach Mode
-  [ ] 6.1 Coach dashboard (participant list)
-  [ ] 6.2 Coach-participant linking via email
-  [ ] 6.3 Comment mode (add comments per section)
-  [ ] 6.4 Edit mode (edit participant CV fields)
-  [ ] 6.5 Participant view of coach comments
+  [x] 6.1 Coach dashboard (participant list, ATS stats per card)
+  [x] 6.2 Coach-participant linking via email (Server Action, not API route)
+  [x] 6.3 Comment mode (add comments per section)
+  [x] 6.4 Edit mode (per-section inline edit of participant CV)
+  [x] 6.5 Participant view: "Ändrad av coach" indicator on preview
 
 Phase 7 - Polish
-  [ ] 7.1 Mobile QA pass on all screens
-  [ ] 7.2 Accessibility audit (labels, contrast, keyboard nav)
-  [ ] 7.3 Empty states on all lists
-  [ ] 7.4 Loading states on all async operations
-  [ ] 7.5 Error boundaries
+  [x] 7.1 Mobile QA pass on all screens
+  [x] 7.2 Accessibility audit (labels, contrast, keyboard nav)
+  [x] 7.3 Empty states on all lists
+  [x] 7.4 Loading states on all async operations
+  [x] 7.5 Error boundaries + 404 page
+  [x] 7.6 Landing page with hero and CTAs
+  [x] 7.7 Accent color picker + language toggle on preview
+```
+
+### Post-MVP scope additions (delivered 2026-03-15 → 2026-03-20)
+
+```
+Phase 8 - AI Assistance (PRD section 15)
+  [x] 8.1 AI types + AIToggle component + useAIMode hook
+  [x] 8.2 POST /api/ai/profile (3-sentence ATS profile, nonsense detection)
+  [x] 8.3 POST /api/ai/description (3 strong-verb bullets)
+  [x] 8.4 POST /api/ai/skills (6 specific skills, JSON array)
+  [x] 8.5 POST /api/ai/keywords (job-posting matching, jobseeker + coach)
+  [x] 8.6 Dev-mode prompt panel (systemPrompt + userPrompt visible)
+  [x] 8.7 Friendly Swedish error messages, credit-exhaustion detection
+```
+
+### V1.1 backlog (open, not started)
+
+```
+  [ ] DOCX export
+  [ ] Gamification (XP, badges, progress bar)
+  [ ] Inspiration tab with mini-challenges
+  [ ] Fast track (30-minute mode)
+  [ ] Email-CV function
+  [ ] Magic link login
+  [ ] Advanced version history
+  [ ] Photo upload to Supabase Storage
+  [ ] Two-column layouts (requires ATS audit)
+  [ ] Cover letter feature
+  [ ] AI rate limiting / per-user quota (PRD section 14)
+  [ ] Persist last-used job posting + keyword matches per CV (PRD section 14)
 ```
 
 Mark each item with [x] when complete. Never mark complete until the self-check passes.
+
+---
+
+## Pickup Checklist (returning after a break)
+
+Before starting new work after time away:
+
+```bash
+pwd                              # /Users/lisa/CV-fix
+git status                       # must be clean
+git log --oneline -10            # what was the last shipped state?
+npx tsc --noEmit                 # must pass
+supabase status                  # CLI linked + reachable
+gh auth status                   # GitHub CLI authed
+vercel whoami                    # Vercel CLI authed (deploy access)
+```
+
+Then re-read in this order:
+1. `PRD.md` — what we're building (note: v1.2 includes AI section 15)
+2. `WORKFLOW.md` — this file
+3. `AGENTS.md` — three-role check
+4. `CLAUDE.md` — code conventions
+5. `git log` since the last doc update — anything shipped that's not yet documented?
