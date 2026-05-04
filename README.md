@@ -118,6 +118,245 @@ Set the same env vars in Vercel → Project → Settings → Environment Variabl
 
 ---
 
-## License
+## Production-Readiness Punch List — pick up here next session
 
-Private project. Not currently licensed for redistribution.
+Status as of 2026-05-05: build green (`tsc`, `eslint`, `next build`, `vitest 120/120`). Three-Role Check signed off "realistic for pilot launch" with the items below completed. See conversation audit at `AUDIT.md` and the original three-role review for context.
+
+Work each item in order. Per `WORKFLOW.md`: implement → `tsc` + `npm run lint` + `npm run build` + `npm test` → append AUDIT.md log entry → commit → push → next.
+
+### 1. PRD v1.3 — formalize Login + forgot/reset-password as shipped scope
+
+**Why:** the auth-recovery flow (`1be57c4`, `9979e64`, `9a8227a`) shipped without a PRD entry. PO rule: every shipped feature must trace to a PRD section.
+
+**Files:** `PRD.md`
+
+**Steps:**
+1. Bump version header to v1.3 (date 2026-05-05). Add history line.
+2. In §5 ("MVP-scope") under "✅ Ingår i MVP — levererad", add: "Lösenordsåterställning via e-post (forgot-password + reset-password, marker-cookie-baserad redirect)".
+3. In §6 ("Användarresor") add §6.4 "Lösenordsåterställning" with the flow: `/forgot-password` → email → `/auth/callback` (consumes `cv_reset_pending` cookie) → `/reset-password` → `signOut` → `/login?reset=success`.
+4. In §14 ("Öppna frågor"), add a closed entry for the auth flow and a new open entry for the deferred Next 14 → 16 upgrade (target: within 90 days of pilot launch).
+5. In §11 ("Datamodell") — no schema change, but mention the `cv_reset_pending` cookie under a new "Cookies" subsection if §11 grows; otherwise leave alone.
+
+**Verify:** PRD reads coherently end-to-end, no dead references, no contradiction with `CLAUDE.md`.
+
+---
+
+### 2. Verify Vercel + Supabase Auth configuration (no shortcuts)
+
+**Why:** Supabase enforces a redirect-URL allowlist. A missing entry breaks reset-password silently in production. Vercel env-var scope (Preview vs Production) bites the same way.
+
+**Files:** none in code — this is a control-plane audit. Document findings in this section as bullets when done.
+
+**Steps:**
+1. **Vercel env vars:** in Vercel → Project → Settings → Environment Variables, confirm for **both Preview and Production**: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (server-side only — must NOT be `NEXT_PUBLIC_*`), `NEXT_PUBLIC_SITE_URL` (= the Vercel production URL, not `localhost`), `ANTHROPIC_API_KEY` (server-side only). Compare against `.env.local` keys.
+2. **Supabase Auth → URL Configuration:**
+   - Site URL: production Vercel URL (e.g. `https://cv-fix.vercel.app`).
+   - Redirect URLs allowlist must include: `<site>/auth/callback`, `<site>/reset-password`, and `http://localhost:3000/auth/callback` (for dev). No trailing slashes, no query strings.
+3. **Supabase Auth → Email Templates:** confirm the password-recovery template is enabled and the "{{ .ConfirmationURL }}" link points back through `/auth/callback`.
+4. **Supabase Auth → Providers:** email/password enabled. Anything else disabled unless we explicitly want it.
+5. **Smoke test on a Preview deploy:** register → confirm email → login → forgot-password → reset → login again. Note any failure here and fix.
+
+**Verify:** all five smoke-test steps complete on a fresh Preview URL.
+
+---
+
+### 3. Supabase RLS audit — every table, every policy
+
+**Why:** one missing policy = data leak across tenants. Re-verify after the recent `ai_request_log` migration.
+
+**Files:** `supabase/migrations/*.sql`, then dashboard inspection.
+
+**Steps:**
+1. List every table from `supabase/migrations/`. Cross-check against the Supabase dashboard → Database → Tables.
+2. For each table, confirm in the dashboard: `Row Level Security` is **ON**.
+3. For each table, confirm at least one policy exists for each operation actually used by the app (SELECT, INSERT, UPDATE, DELETE).
+4. Sanity-check the policy expressions: `auth.uid() = user_id` for owner-scoped tables; coach access via `EXISTS (SELECT 1 FROM coach_links WHERE coach_id = auth.uid() AND user_id = <table>.user_id)` for coach-readable tables.
+5. Try one negative test from the SQL editor while logged in as a non-owner user (or via two anon-key sessions): confirm cross-tenant SELECT returns zero rows.
+
+**Verify:** all 14+ tables checked, no "RLS off" entries, negative-test query returns no rows.
+
+---
+
+### 4. ATS soft warning — "CV längre än 2 sidor" (PRD §9.2)
+
+**Why:** the only soft warning still missing from PRD §9.2.
+
+**Files:** `lib/ats/validate.ts` (and its test if one exists), then surface in `components/cv/ATSPanel.tsx` (or wherever soft warnings render).
+
+**Steps:**
+1. Add a heuristic page-length estimator. Rough rule of thumb: ~500–600 words per single-column A4 page in body text, plus structural overhead. Sum word count across `summary`, all experience descriptions, all education descriptions, hobbies, volunteering descriptions, "other" rows. If estimate > 2 pages, push a soft warning.
+2. Add the warning code to the existing soft-warning union (look at how the others are typed).
+3. Surface the message in the ATS panel in Swedish: e.g. "Ditt CV är troligen längre än 2 sidor — överväg att korta ner." Soft warnings do NOT block export per §9.1/§9.2.
+4. Add a unit test: short CV → no warning; padded long CV → warning fires.
+
+**Verify:** test passes, soft warning shows on a synthetic long CV in the running app, hard-error logic untouched.
+
+---
+
+### 5. Touch targets ≥44×44px on remove/delete buttons
+
+**Why:** primary user is on a budget smartphone with possibly limited dexterity. Current bare `<button class="text-sm text-red-500">Ta bort</button>` ~16–20px is below the 44px AGENTS.md UX standard.
+
+**Files (per the original audit):**
+- `components/cv/ExperienceForm.tsx:~193`
+- `components/cv/EducationForm.tsx:~122`
+- `components/cv/SkillsLanguagesForm.tsx:~341`
+- Plus `VolunteeringForm.tsx`, `LanguagesForm.tsx`, `OtherForm.tsx` if they have similar bare-button removes.
+
+**Steps:**
+1. Replace each bare `<button>` "Ta bort" with `<Button variant="outline" size="sm" className="min-h-[44px]">Ta bort</Button>` (or appropriate destructive styling).
+2. Add `aria-label="Ta bort <itemDescription>"` for screen-reader clarity.
+3. Add visible focus ring (`focus:ring-2 focus:ring-red-500`) since `<Button>` may not include this by default for outline variants.
+4. Check on 375px width — buttons should not wrap awkwardly; prefer `w-full sm:w-auto` if the row is cramped.
+
+**Verify:** open every form step in dev mode at 375px; tap-test each remove button; keyboard-tab through and confirm focus is visible.
+
+---
+
+### 6. PDF export loading state
+
+**Why:** without it, a slow PDF feels like the app froze. Users double-click → multi-download.
+
+**Files:** `app/(app)/cv/[id]/preview/page.tsx`, `app/(guest)/cv/guest/preview/page.tsx`, possibly a small `<DownloadPDFButton>` wrapper if the logic is shared.
+
+**Steps:**
+1. Convert the "Ladda ner PDF" link/button to a Client Component that uses `fetch('/api/cv/[id]/pdf')` (or guest variant) and tracks loading state.
+2. While loading: button text "Skapar PDF…" + spinner + `disabled`.
+3. On success: trigger download via `Blob → URL.createObjectURL → <a download>` pattern.
+4. On error: show Swedish error in a toast or inline message (e.g. "Det gick inte att skapa PDF:en. Försök igen.").
+5. Re-enable button when done.
+
+**Verify:** preview page shows loading state for >100ms during PDF render; rapid re-clicks don't fire multiple requests.
+
+---
+
+### 7. Explicit `verifyOwnership(cvId, userId)` in every save\* action
+
+**Why:** RLS already protects against cross-tenant writes (and was verified — see AUDIT.md), but `CLAUDE.md` "Validate ownership before mutating" mandates an explicit pre-flight check. Defense in depth — and a failed RLS check returns silent no-op success today, which is misleading to the UI.
+
+**Files:** `lib/actions/cv.ts:~103–377` (the `save*` actions), pattern reference: `verifyCoachAccess` in `lib/actions/coach.ts`.
+
+**Steps:**
+1. Add a private helper at the top of `lib/actions/cv.ts` (or a sibling `lib/actions/_ownership.ts` only if it gains a second caller):
+   ```ts
+   async function verifyOwnership(supabase, cvId, userId): Promise<boolean>
+   ```
+   Implementation: `select id from cvs where id = cvId and user_id = userId limit 1`.
+2. Call `verifyOwnership(...)` after `auth.getUser()` in every `save*` action: `savePersonalInfo`, `saveProfileText`, `saveExperiences`, `saveEducations`, `saveSkills`, `saveLanguages`, `saveHobbies`, `saveVolunteerings`, `saveOthers`, `updateCVSettings` (and `createCV` doesn't need it — it owns the create).
+3. On failure return `{ success: false, error: 'Du har inte tillgång till det här CV:t.' }`.
+
+**Verify:** existing tests still pass; add one test that calls `saveProfileText` with a foreign `cvId` and asserts `{ success: false }`.
+
+---
+
+### 8. Zod validation on `migrateGuestCV` payload
+
+**Why:** the action takes a client-supplied `GuestCV` object and forwards fields straight into Postgres. A hostile client can post junk; only column constraints stop it.
+
+**Files:** `lib/actions/guest.ts:~10`, `lib/validation/guest.ts` (new schema if not present — extend `lib/validation/cv.ts` patterns).
+
+**Steps:**
+1. Define a `guestCVSchema` in `lib/validation/` mirroring the `GuestCV` shape: every field with the same constraints the wizard enforces piecewise.
+2. In `migrateGuestCV`, run `guestCVSchema.safeParse(input.guestCV)` first; on failure return `{ success: false, error: 'Ogiltigt gäst-CV.' }` (or first Zod issue message).
+3. Pass the parsed value (not the raw input) to the downstream insert.
+
+**Verify:** add a test for malformed payload → `{ success: false }`; happy-path still passes.
+
+---
+
+### 9. Insert-error checking in `coachSaveStep5` and `createCV`
+
+**Why:** today both fire `Promise.all([insert1, insert2, ...])` without inspecting each result's `.error`. A failed insert returns a misleading `{ success: true }` to the UI.
+
+**Files:** `lib/actions/coach.ts:~276` (`coachSaveStep5`), `lib/actions/cv.ts:~97–98` (`createCV` seeds for `cv_personal_info` + `cv_profile`).
+
+**Steps:**
+1. In `coachSaveStep5`, mirror the existing pattern from the `deletes` block right above: `const failed = results.find((r) => r.error); if (failed) return { success: false, error: '...' }`.
+2. In `createCV`, after the seed-row inserts check both `.error` results and return `{ success: false }` on either. Roll back if possible — at minimum delete the orphan `cvs` row so the user doesn't see a half-broken CV in their dashboard.
+
+**Verify:** existing tests still green; add a test for each that mocks one insert to fail and asserts `{ success: false }`.
+
+---
+
+### 10. Failure-branch test coverage
+
+**Why:** AGENTS.md DEV definition of done requires both branches of the discriminated-union result to be tested. Today `lib/actions/coach.ts` and `lib/actions/guest.ts` have **no test files**, and `lib/actions/cv.test.ts` only covers `updateCVSettings`.
+
+**Files:** new `lib/actions/coach.test.ts`, new `lib/actions/guest.test.ts`, expand `lib/actions/cv.test.ts`.
+
+**Steps (split across multiple commits — one file per commit is fine):**
+1. **`coach.test.ts`** — mirror the mocking pattern from `auth.test.ts`. Cover `addComment`, `coachSaveExperiences`, `coachSaveStep5` (especially after item 9), `verifyCoachAccess` denial path. Both `{ success: true }` and `{ success: false }` for each.
+2. **`guest.test.ts`** — cover `migrateGuestCV` happy-path + Zod-rejection (item 8) + admin-client error path.
+3. **`cv.test.ts` expansion** — cover `createCV`, `savePersonalInfo`, `saveProfileText`, plus the eight other `save*` actions. Both branches each. Use a shared mock-factory if the boilerplate gets repetitive.
+
+**Verify:** `npm test` total count goes up substantially (estimate: +30–50 tests). All pass.
+
+---
+
+### 11. Next 14 → 16 migration (deferred — separate epic, target: within 90 days post-pilot)
+
+**Why:** five Next.js advisories (2 high-severity affecting RSC / Server Components) are only patched in Next 16.2.4. Vercel's infrastructure mitigates the self-hosted-only ones, and rate limiting + auth gating bound the rest, so deferral is acceptable for pilot but not indefinitely.
+
+**Prerequisites — do NOT start until these are true:**
+- All items 1–10 above are done and pushed.
+- A pilot deploy is live and stable for at least 1 week.
+- A dedicated branch (`upgrade/next-16`) and at least 1 full focused day reserved.
+
+**Migration steps:**
+
+1. **Read upstream notes first:**
+   - https://nextjs.org/docs/app/building-your-application/upgrading/version-15
+   - https://nextjs.org/docs/app/building-your-application/upgrading/version-16
+   - Read both top to bottom. Note every breaking change that touches files we have.
+
+2. **Branch:**
+   ```bash
+   git checkout -b upgrade/next-16
+   ```
+
+3. **Bump in two hops (15 first, then 16) — easier to debug:**
+   ```bash
+   npx @next/codemod@canary upgrade latest   # offers v15 codemods first
+   ```
+   Resolve each codemod prompt deliberately; do not blanket-accept.
+
+4. **Hard-bumps if codemod misses anything:**
+   ```bash
+   npm install next@15 react@19 react-dom@19 eslint-config-next@15
+   ```
+   Confirm `npm run build` passes on Next 15 first. Commit. Then:
+   ```bash
+   npm install next@16 eslint-config-next@16
+   ```
+
+5. **Audit the breaking surface for our app specifically:**
+   - **Async dynamic APIs** (Next 15+): `cookies()`, `headers()`, `params`, `searchParams` are now `Promise`-returning. Touch every file that uses these — we have many, especially `app/(app)/cv/[id]/edit/[step]/page.tsx`, all `app/api/**/route.ts`, every Server Action that calls `cookies()` (incl. `lib/auth/cookies.ts`).
+   - **Caching defaults flipped:** `fetch` is no longer cached by default; route handlers default to dynamic. Re-audit anything that relied on default caching.
+   - **`next/font`, `next/image`:** API tweaks. Run codemod, sanity-check.
+   - **Middleware:** signature/runtime changes — review `middleware.ts` and `lib/supabase/middleware.ts` against upstream notes.
+   - **Server Actions:** API stable, but verify the `'use server'` constraint is still "only async exports" (it is) — no need to revisit `lib/auth/cookies.ts`.
+
+6. **Postcss + tooling:** the postcss CVE clears once Next 16 ships its newer postcss. No separate action needed.
+
+7. **Update CLAUDE.md and PRD §4** to reflect Next 16 (remove the lock-on-14 line; add a target version).
+
+8. **Update AUDIT.md and run full audit on the upgrade branch** before merging.
+
+9. **Test plan (run in this order):**
+   - `npx tsc --noEmit` — green.
+   - `npm run lint` — green.
+   - `npm run build` — green; check the build output for new warnings.
+   - `npm test` — all 120+ tests pass.
+   - `npm run dev` — open every page: landing, login, register, forgot-password, reset-password, dashboard, `/cv/new`, `/cv/[id]/edit/[step]` for each of the 5 steps, `/cv/[id]/preview`, `/cv/guest`, `/cv/guest/[step]`, `/cv/guest/preview`, coach dashboard, coach CV view. Note any 500s.
+   - Smoke-test all four AI endpoints (profile / description / skills / keywords) authed and guest where applicable.
+   - Smoke-test PDF export (authed and guest).
+   - Smoke-test full forgot-password flow on a real preview deploy.
+   - Run `npm audit --omit=dev` and confirm the two deferred CVEs (next, postcss) are gone.
+
+10. **Rollback plan:** if anything substantive breaks, abandon the branch and stay on Next 14 until next attempt. Do not force-merge.
+
+11. **Open a PR for review** even if the project is currently push-to-main — this upgrade warrants a deliberate diff review.
+
+**Verify:** all test-plan steps pass on a Vercel preview deploy. Then merge.
+
+---
