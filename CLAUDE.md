@@ -303,6 +303,44 @@ Rules:
 
 System prompts already encode strict rules (forbidden buzzwords, exact format, "never invent facts"). Don't loosen these without discussing with the user — they exist to keep ATS safety intact.
 
+### Input-size caps (`lib/ai/limits.ts`)
+
+Every route checks user-supplied string fields against `MAX_INPUT` before any further work, and returns `413 'Förfrågan är för stor.'` when over. Caps are intentionally generous (≥10× the largest legitimate value) — they bound the worst case, not enforce formatting.
+
+```typescript
+const oversized = findOversizedField({ currentSummary, headline })
+if (oversized) return err('Förfrågan är för stor.', 413)
+```
+
+### Per-user hourly rate limit (`lib/ai/rate-limit.ts`)
+
+Backed by the `ai_request_log` table (migration `20260504_ai_request_log.sql`). Each route calls `checkRateLimit(supabase, user.id, route)` **after auth + ownership check, before the Anthropic call**. Returns `{ allowed, remaining, resetAt }`.
+
+Limit: `AI_HOURLY_LIMIT = 50` per user, all roles, all routes share the same bucket. Tune once we have telemetry.
+
+```typescript
+const rl = await checkRateLimit(supabase, user.id, 'profile')
+if (!rl.allowed) {
+  return NextResponse.json<AIResult>(
+    { result: '', error: 'Du har gjort för många AI-förfrågningar. Försök igen om en stund.' },
+    { status: 429, headers: rateLimitHeaders(rl) }
+  )
+}
+```
+
+**Fail-open semantics:** if the rate-limit table is missing or the query errors, the helper logs a warning and returns `allowed: true`. That keeps the app working before the migration is applied (and during transient Supabase issues), at the cost of brief unprotected windows. Acceptable trade-off.
+
+The guest path on `/api/ai/description` and `/api/ai/profile` is **not rate-limited** — guests have no `user.id`. Input-size caps still apply. If guest abuse becomes a problem, gate by IP via Vercel middleware.
+
+### Defensive content extraction
+
+`message.content[0].type` can throw if the array is empty (refusal-only or tool-use-only responses). Always extract via `find`:
+
+```typescript
+const textBlock = message.content.find((b) => b.type === 'text')
+const text = textBlock?.type === 'text' ? textBlock.text.trim() : ''
+```
+
 ---
 
 ## ATS Safety (critical)

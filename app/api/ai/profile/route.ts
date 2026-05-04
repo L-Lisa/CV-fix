@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 import { getFullCV } from '@/lib/queries/cv'
+import { checkRateLimit, rateLimitHeaders } from '@/lib/ai/rate-limit'
+import { findOversizedField } from '@/lib/ai/limits'
 import type { AIProfilePayload, AIResult } from '@/types'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -40,6 +42,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const { language, currentSummary, cvId, guestData } = body
 
+  // Input-size cap (cheap defence against budget burn).
+  const oversized = findOversizedField({
+    currentSummary,
+    headline: guestData?.headline ?? undefined,
+  })
+  if (oversized) return err('Förfrågan är för stor.', 413)
+
   let headline: string | null = null
   let experiences: Array<{ job_title: string | null; employer: string | null; description: string | null }> = []
   let educations: Array<{ program: string | null; institution: string | null }> = []
@@ -55,6 +64,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const fullCV = await getFullCV(cvId)
     if (!fullCV || fullCV.cv.user_id !== user.id) {
       return err('CV hittades inte.', 403)
+    }
+
+    // Rate limit (per-user hourly).
+    const rl = await checkRateLimit(supabase, user.id, 'profile')
+    if (!rl.allowed) {
+      return NextResponse.json<AIResult>(
+        { result: '', error: 'Du har gjort för många AI-förfrågningar. Försök igen om en stund.' },
+        { status: 429, headers: rateLimitHeaders(rl) }
+      )
     }
 
     headline = fullCV.personalInfo?.headline ?? null
@@ -113,7 +131,10 @@ Språk: ${langLines || 'inga'}`
       messages: [{ role: 'user', content: userPrompt }],
     })
 
-    const text = message.content[0].type === 'text' ? message.content[0].text.trim() : ''
+    // Defensive: content can be empty or contain non-text blocks (tool use,
+    // refusal). Pull the first text block if any.
+    const textBlock = message.content.find((b) => b.type === 'text')
+    const text = textBlock?.type === 'text' ? textBlock.text.trim() : ''
     const result: AIResult = {
       result: text,
       systemPrompt: SYSTEM_PROMPT,

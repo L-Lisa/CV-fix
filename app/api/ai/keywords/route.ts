@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 import { getFullCV } from '@/lib/queries/cv'
+import { checkRateLimit, rateLimitHeaders } from '@/lib/ai/rate-limit'
+import { findOversizedField } from '@/lib/ai/limits'
 import type { AIKeywordsPayload, AIResult } from '@/types'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -37,6 +39,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return err('Jobbannons saknas.', 400)
   }
 
+  // Input-size cap.
+  const oversized = findOversizedField({ jobPosting })
+  if (oversized) return err('Förfrågan är för stor.', 413)
+
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return err('Inte inloggad.', 401)
@@ -56,6 +62,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       .single()
 
     if (!link) return err('Åtkomst nekad.', 403)
+  }
+
+  // Rate limit (per-user; coaches share the same hourly bucket as jobseekers).
+  const rl = await checkRateLimit(supabase, user.id, 'keywords')
+  if (!rl.allowed) {
+    return NextResponse.json<AIResult>(
+      { result: '', error: 'Du har gjort för många AI-förfrågningar. Försök igen om en stund.' },
+      { status: 429, headers: rateLimitHeaders(rl) }
+    )
   }
 
   const { personalInfo, profile, experiences, educations, skills, languages } = fullCV
@@ -93,7 +108,8 @@ ${jobPosting.slice(0, 3000)}`
       messages: [{ role: 'user', content: userPrompt }],
     })
 
-    const text = message.content[0].type === 'text' ? message.content[0].text.trim() : ''
+    const textBlock = message.content.find((b) => b.type === 'text')
+    const text = textBlock?.type === 'text' ? textBlock.text.trim() : ''
     const result: AIResult = {
       result: text,
       systemPrompt: SYSTEM_PROMPT,

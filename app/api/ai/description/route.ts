@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 import { getFullCV } from '@/lib/queries/cv'
+import { checkRateLimit, rateLimitHeaders } from '@/lib/ai/rate-limit'
+import { findOversizedField } from '@/lib/ai/limits'
 import type { AIDescriptionPayload, AIResult } from '@/types'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -31,7 +33,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const { jobTitle, employer, currentDescription, language, cvId, isGuest } = body
 
-  // Auth flow — verify ownership when cvId is present and not guest
+  // Input-size cap.
+  const oversized = findOversizedField({
+    jobTitle,
+    employer,
+    currentDescription,
+  })
+  if (oversized) return err('Förfrågan är för stor.', 413)
+
+  // Auth flow — verify ownership when cvId is present and not guest.
   if (cvId && !isGuest) {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -40,6 +50,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const fullCV = await getFullCV(cvId)
     if (!fullCV || fullCV.cv.user_id !== user.id) {
       return err('CV hittades inte.', 403)
+    }
+
+    const rl = await checkRateLimit(supabase, user.id, 'description')
+    if (!rl.allowed) {
+      return NextResponse.json<AIResult>(
+        { result: '', error: 'Du har gjort för många AI-förfrågningar. Försök igen om en stund.' },
+        { status: 429, headers: rateLimitHeaders(rl) }
+      )
     }
   }
 
@@ -56,7 +74,8 @@ Nuvarande text: ${currentDescription?.trim() || 'ingen'}`
       messages: [{ role: 'user', content: userPrompt }],
     })
 
-    const text = message.content[0].type === 'text' ? message.content[0].text.trim() : ''
+    const textBlock = message.content.find((b) => b.type === 'text')
+    const text = textBlock?.type === 'text' ? textBlock.text.trim() : ''
     const result: AIResult = {
       result: text,
       systemPrompt: SYSTEM_PROMPT,
