@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { loginSchema, type LoginFormValues } from '@/lib/validation/auth'
 import { login } from '@/lib/actions/auth'
 import { Button } from '@/components/ui/button'
@@ -21,6 +22,8 @@ import {
 export function LoginForm() {
   const [isPending, startTransition] = useTransition()
   const [serverError, setServerError] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const resetSuccess = searchParams?.get('reset') === 'success'
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -51,6 +54,14 @@ export function LoginForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          {resetSuccess && (
+            <Alert>
+              <AlertDescription>
+                Lösenordet är uppdaterat. Logga in med det nya lösenordet.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {serverError && (
             <Alert variant="destructive">
               <AlertDescription>{serverError}</AlertDescription>
@@ -98,6 +109,12 @@ export function LoginForm() {
           <Button type="submit" className="w-full min-h-[44px]" disabled={isPending}>
             {isPending ? 'Loggar in…' : 'Logga in'}
           </Button>
+
+          <p className="text-center text-sm">
+            <Link href="/forgot-password" className="text-muted-foreground underline">
+              Glömt lösenord?
+            </Link>
+          </p>
 
           <p className="text-center text-sm text-muted-foreground">
             Har du inget konto?{' '}

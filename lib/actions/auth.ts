@@ -3,7 +3,12 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { registerSchema, loginSchema } from '@/lib/validation/auth'
+import {
+  registerSchema,
+  loginSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+} from '@/lib/validation/auth'
 
 export type AuthActionResult =
   | { success: true; message?: string }
@@ -135,4 +140,69 @@ export async function logout(): Promise<void> {
   const supabase = createClient()
   await supabase.auth.signOut()
   redirect('/login')
+}
+
+// Sends a password-reset email. Always reports success to the user, even when
+// Supabase says the address is unknown — preventing user-enumeration via the
+// reset endpoint. Errors are logged server-side.
+export async function requestPasswordReset(
+  formData: FormData
+): Promise<AuthActionResult> {
+  const parsed = forgotPasswordSchema.safeParse({ email: formData.get('email') })
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message }
+  }
+
+  const supabase = createClient()
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+
+  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+    // Route through /auth/callback so the recovery code is exchanged for a
+    // session before the user lands on /reset-password.
+    redirectTo: `${siteUrl}/auth/callback?next=/reset-password`,
+  })
+
+  if (error) {
+    console.error('requestPasswordReset failed:', error.message)
+    // Intentionally still success: do not leak whether the email exists.
+  }
+
+  return {
+    success: true,
+    message: 'Om kontot finns har vi skickat en återställningslänk till din e-post.',
+  }
+}
+
+// Updates the password for the currently authenticated session (the user is
+// authenticated via the recovery link). After success, signs them out so they
+// must log in fresh — confirms the new password works and prevents lingering
+// recovery-session reuse on shared devices.
+export async function updatePassword(
+  formData: FormData
+): Promise<AuthActionResult> {
+  const parsed = resetPasswordSchema.safeParse({
+    password: formData.get('password'),
+    confirmPassword: formData.get('confirmPassword'),
+  })
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message }
+  }
+
+  const supabase = createClient()
+
+  const { error } = await supabase.auth.updateUser({ password: parsed.data.password })
+  if (error) {
+    console.error('updatePassword failed:', error.message)
+    return {
+      success: false,
+      error: 'Det gick inte att uppdatera lösenordet. Försök igen.',
+    }
+  }
+
+  await supabase.auth.signOut()
+
+  return {
+    success: true,
+    message: 'Lösenordet är uppdaterat. Logga in med det nya lösenordet.',
+  }
 }
