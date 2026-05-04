@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_request_log: {
+        Row: {
+          created_at: string
+          id: string
+          route: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          route: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          route?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_request_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coach_links: {
         Row: {
           coach_id: string

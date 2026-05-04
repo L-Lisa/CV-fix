@@ -48,8 +48,7 @@ export async function checkRateLimit(
 
   try {
     const { count, error } = await supabase
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .from('ai_request_log' as any)
+      .from('ai_request_log')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
       .gt('created_at', oneHourAgo)
@@ -68,8 +67,7 @@ export async function checkRateLimit(
 
     // Allowed — record the call.
     const { error: insertError } = await supabase
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .from('ai_request_log' as any)
+      .from('ai_request_log')
       .insert({ user_id: userId, route })
 
     if (insertError) {
