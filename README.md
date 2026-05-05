@@ -118,6 +118,26 @@ Set the same env vars in Vercel → Project → Settings → Environment Variabl
 
 ---
 
+## v1.4 upgrade — in progress (started 2026-05-06)
+
+**Spec sources** (saved under `docs/v1.4/` in PR 5):
+- `AI_PROMPTS_v1.md` — new system prompts for 4 existing routes + new `/api/ai/cv-feedback` endpoint
+- `UI_COPY_v1.md` — copy refresh per CV step + new feedback panel copy
+- `UX_PATTERNS_v1.md` — reusable UX patterns (HowDoesThisWork, AI utkast banner, etc.)
+- `PRD_v1.4_DELTA.md` — paste-ready PRD bump
+
+**PR sequence (push after each):**
+
+- [ ] PR 1: `feat(ai): upgrade system prompts for profile/description/skills/keywords` — single bundled commit, four routes change identically, removes "prompt under utveckling" tags
+- [ ] PR 2: `feat(ai): add /api/ai/cv-feedback endpoint` — new types, Zod, rate-limit + input-cap registration, full route
+- [ ] PR 3: `feat(ux): cv-feedback UI on both preview pages + HowDoesThisWork`
+- [ ] PR 4: `refactor(ui): apply v1.4 copy + validation patterns to all 5 form steps`
+- [ ] PR 5: `docs: bump PRD to v1.4 + save spec files to docs/v1.4/`
+
+**Anti-Loop guard:** stop and report after 3 failed attempts on the same problem (per WORKFLOW.md).
+
+---
+
 ## Production-Readiness Punch List — pick up here next session
 
 Status as of 2026-05-05: build green (`tsc`, `eslint`, `next build`, `vitest 120/120`). Three-Role Check signed off "realistic for pilot launch" with the items below completed. See conversation audit at `AUDIT.md` and the original three-role review for context.
