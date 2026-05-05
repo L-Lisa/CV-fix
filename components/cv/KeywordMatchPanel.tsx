@@ -47,12 +47,6 @@ export default function KeywordMatchPanel({ cvId, language = 'sv' }: Props) {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2 mb-1">
-        <span className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5">
-          Förslag på CV-tips · prompt under utveckling
-        </span>
-      </div>
-
       <textarea
         value={jobPosting}
         onChange={(e) => setJobPosting(e.target.value)}

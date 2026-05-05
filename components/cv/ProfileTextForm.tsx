@@ -135,23 +135,18 @@ export default function ProfileTextForm({ cvId, initialSummary, language = 'sv',
           </p>
 
           {aiEnabled && (
-            <div className="mb-3 space-y-1">
-              <span className="inline-block text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5">
-                Förslag på CV-tips · prompt under utveckling
-              </span>
-              <div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGenerateProfile}
-                  disabled={aiLoading}
-                  className="text-purple-600 border-purple-200 hover:bg-purple-50 gap-2"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  {aiLoading ? 'Genererar…' : 'Generera förslag'}
-                </Button>
-              </div>
+            <div className="mb-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateProfile}
+                disabled={aiLoading}
+                className="text-purple-600 border-purple-200 hover:bg-purple-50 gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                {aiLoading ? 'Genererar…' : 'Generera förslag'}
+              </Button>
             </div>
           )}
 
@@ -184,7 +179,7 @@ export default function ProfileTextForm({ cvId, initialSummary, language = 'sv',
           {aiEnabled && aiPrompts && (
             <details className="mt-3 text-xs text-gray-500 border border-purple-100 rounded-md">
               <summary className="cursor-pointer px-3 py-2 font-medium text-purple-700 select-none">
-                Förslag på CV-tips – prompt under utveckling
+                AI-prompt (dev)
               </summary>
               <div className="px-3 pb-3 space-y-2">
                 <div>
