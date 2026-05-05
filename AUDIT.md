@@ -224,3 +224,24 @@ Test suite: 120 / 120 passing (`npm test`). +29 net since the prior audit, cover
 - **Beta posture not feature-flagged.** A direct UI edit was sufficient per the user's explicit scope ("we are disabling a button, adding a CTA, and updating a CV template"). Re-enabling login is a one-file revert. No env flag added by design.
 
 **Validation performed:** `tsc --noEmit` clean, `eslint .` clean, `next build` succeeds, `npm test` 125 / 125. Migration applied to live DB cleanly (`supabase db push`, no errors). `types/database.ts` regenerated and verified unchanged (CHECK constraints don't surface in generated TS types).
+
+### 2026-05-05 (evening) — `3c9ae34..HEAD` — user-testing readiness fixes
+
+**Scope:** 3 commits, all behavioral, all driven by a Three-Role user-testing review that identified three P0s blocking pilot deployment. (1) `3e7a7bd` — gate `systemPrompt` and `userPrompt` returns from all four AI routes on `NODE_ENV !== 'production'`. CLAUDE.md / PRD §15.2 already required this; the gate was missing in code, and any tester toggling AI would have seen our raw prompt engineering in an expandable panel. (2) `3a50b91` — refactor `LayoutPicker` to be persistence-agnostic via `onLayoutChange` / `onAccentChange` callbacks; new `AuthedLayoutPicker` wrapper for the authed flow; `LayoutPicker` dropped into the guest preview so testers can actually reach Layout 4 (which had shipped this morning but was unreachable without an account). (3) `f83211a` — replace the `<Link href="/register">` / `<Link href="/login">` "Spara ditt CV permanent" block on guest preview with a beta-posture-coherent reminder; the previous block contradicted the landing page's "Ingen information sparas" promise.
+
+**Files read in full:** all four AI routes (`profile`, `description`, `skills`, `keywords`), `components/cv/ProfileTextForm.tsx` (line 184 panel render), `components/cv/ExperienceForm.tsx` (line 405 panel render), `components/cv/SkillsLanguagesForm.tsx` (line 381 panel render), `components/cv/LayoutPicker.tsx` (refactored), `components/cv/AuthedLayoutPicker.tsx` (new), `app/(app)/cv/[id]/preview/page.tsx`, `app/(guest)/cv/guest/preview/page.tsx`, `lib/guest/storage.ts` (`saveGuestCV` semantics).
+
+**Result: No critical bugs found.** The P0 prompt-leak that motivated the fix was the finding from the user-testing review earlier; it landed in this same window.
+
+**Trace highlights:**
+- **Prompt-leak gate:** API responses now omit `systemPrompt`/`userPrompt` when `NODE_ENV === 'production'`. Form components render the dev panel under `aiPrompts && (...)` predicates which become falsy when the fields are absent — verified by reading the three render sites. No component-layer gate added; single source of truth at the API per CLAUDE.md "don't add fallbacks for scenarios that can't happen."
+- **LayoutPicker refactor preserves behavior:** internal `pending` state still wraps the awaited callback; `localColor` and the Layout 2-only accent picker still work; the four-layout list is unchanged from `73e7d24`. `AuthedLayoutPicker` is a thin client wrapper (~30 lines) that closes over `cvId` and `useRouter` to call `updateCVSettings` and refresh — semantically identical to the prior monolithic `LayoutPicker`.
+- **Guest preview persistence:** layout/accent changes update both React state (for immediate re-render and re-derived `fullCV`) and `localStorage` via `saveGuestCV`, so a page reload preserves the chosen layout. Existing `loadGuestCV()` on mount handles re-hydration.
+- **Beta posture exits closed:** `<Link href="/register">` and `<Link href="/login">` in the export box were the last routable auth-recovery exits from guest mode. With the landing page already dimming the same destinations, the guest flow is now consistently informational about the testversion state.
+
+**Notes for follow-up (non-blocking):**
+
+- **Live PDF preview missing in guest flow.** Authed users see `<CVPreviewClient>` rendering layouts in real time; guest testers must download a PDF to compare layouts. Adding it is ~5 lines (already dynamic-imported in the authed page). Skipped today to respect the user's explicit three-step scope; recommended as the next quick win for tester UX, especially since the test goal is validating Layout 4.
+- **AI dev panel in form components is now dead UI in production builds.** Gated by `aiPrompts && (...)` which will never be truthy in prod. Pre-existing component code intentionally left untouched per the single-source-of-truth-at-API decision. No bug, just dead branches.
+
+**Validation performed:** `tsc --noEmit` clean, `eslint . --ext .ts,.tsx` clean (0 errors, 0 warnings), `next build` succeeds, `npm test` 125 / 125 pass after each of the three commits independently.
