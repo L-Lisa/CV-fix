@@ -431,3 +431,28 @@ Each case lists the spec source, the expected behaviour given the v1.4 prompt st
 - **First-time empty-state hjälptexter (UI_COPY §3.6 / §4.4):** "Inget jobb ännu? Börja med det senaste eller mest relevanta…" copy when `experiences.length === 0`. Skipped because the form already has an `Add` button that's discoverable.
 
 **Validation performed:** `tsc --noEmit` clean, `eslint .` clean, `next build` succeeds, `npm test` 125 / 125 (6 test updates landed alongside the Zod message edits).
+
+### 2026-05-06 — `3d3e6bd..HEAD` — v1.4 PR 5: PRD bump + spec archive
+
+**Scope:** 1 commit, docs-only. Bumps `PRD.md` from v1.3 → v1.4 per `docs/v1.4/PRD_v1.4_DELTA.md`. Archives the four spec files (`AI_PROMPTS_v1.md`, `UI_COPY_v1.md`, `UX_PATTERNS_v1.md`, `PRD_v1.4_DELTA.md`) under `docs/v1.4/` so the spec is versioned with the repo and survives across sessions. Updates `README.md` to mark all five v1.4 PRs as shipped and links the archived spec files.
+
+**PRD changes applied (per delta document §1–§7):**
+- Version header: `1.3 → 1.4`, status updated to reflect v1.4 scope; history line added.
+- §5: new "Tillägg utöver MVP – levererad 2026-05-06" subsection lists the four shipped artefacts.
+- §14: `[x]` opt-in / opt-out question stängd 2026-05-06; new open question added for coach-driven feedback (deferred to post-beta).
+- §15.1: feedback table extended with row 5 (`/api/ai/cv-feedback`) plus a paragraph describing the pedagogical framing and the absence of any "Ersätt automatiskt"-button.
+- §15.2: forbidden-list expanded inline (full list referenced); klyscha-regeln explicitly described as contextual; "AI-output är alltid ett utkast" added as principle; dev-panel gating documented.
+- §15.3: cv-feedback inherits the security model; coach access explicitly excluded for v1.4.
+- §15.4: data-model unchanged. Migration `20260506_ai_request_log_cv_feedback.sql` noted (CHECK-constraint extension, not a schema change).
+- §15.5: full new subsection on `/api/ai/cv-feedback` covering activation, function, pedagogical framing, UI buttons, [TIPS] case, security, forbidden-list usage.
+- §15.6: detail-implementation reference points to the four files in `docs/v1.4/`.
+
+**Result: No critical bugs found.** Pure documentation + file-archive commit; no code paths touched.
+
+**Validation performed:** `tsc --noEmit` clean, `npm test` 125 / 125, `next build` succeeds. PRD self-consistency verified (no broken section references, history block matches version header).
+
+**Notes for follow-up (still open after v1.4 lands):**
+
+- **Live AI smoke verification across all 5 routes** before user-test traffic — same item flagged at the end of PR 1 / 2 / 3 / 4. ~10 minutes of curl-against-Preview-deploy. The five "Borderline" cases (klyscha-without-proof variants in particular) need a real Anthropic call to confirm model adherence.
+- Items still on the README "Production-Readiness Punch List" (1, 4–10, 11) are unaffected by v1.4 and remain queued.
+- Items deferred from PR 4 (priority-ordered profile validation, "ett utkast" banner, footer disclaimer, AIToggle session-helper, step-5 sub-section helpers, first-time empty-state copy) are explicitly logged in PR 4's audit entry — pick up in v1.5 or a focused polish sprint.

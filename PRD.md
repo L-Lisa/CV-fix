@@ -1,12 +1,13 @@
 # PRD – CV-byggare för jobbcoacher (Rusta och Matcha)
-**Version:** 1.3
-**Status:** Aktiv – MVP shippad 2026-03-15. AI-assistans tillagd som scope-utökning 2026-03-15 → 2026-03-20. Beta-testperiod startar 2026-05-05 (inloggning tillfälligt avstängd i UI; "Starta utan konto" är primär ingång).
-**Senast uppdaterad:** 2026-05-05
+**Version:** 1.4
+**Status:** Aktiv – beta-testperiod pågår. AI-assistans utökad med helhets-CV-feedback (avsnitt 15.5) och uppdaterade prompt-regler (avsnitt 15.2).
+**Senast uppdaterad:** 2026-05-06
 
 > **Historik**
 > - v1.0 → v1.1 (2026-03-14): MVP-scope låst.
 > - v1.1 → v1.2 (2026-05-04): MVP markerad som levererad. AI-assistans (avsnitt 15) dokumenterad som scope-utökning utöver original-MVP. Tech stack (avsnitt 4) uppdaterad med Anthropic SDK. Öppna frågor (avsnitt 14) ompröade.
 > - v1.2 → v1.3 (2026-05-05): Layout 4 (Harvard / Ivy League) tillagd. Beta-testperiod inledd: inloggning och kontoregistrering tillfälligt avstängda i UI, koden ligger kvar bakom dimmade CTA:er. Guest-flödet ("Starta utan konto") är permanent förstaval — bug i middleware som omdirigerade `/cv/guest` till `/login` är åtgärdad.
+> - v1.3 → v1.4 (2026-05-06): AI-prompts uppgraderade — utökad forbidden-lista, klyscha-regeln blev kontextuell (klyschor tillåts om bevis i samma mening), ny endpoint `/api/ai/cv-feedback` för helhets-CV-granskning. Öppen fråga i §14 om opt-in/opt-out för AI-toggle stängd: opt-in behålls som default. UI-copy uppdaterad med vardagsspråk-underrubriker per CV-steg och åtgärdsinriktade Zod-meddelanden.
 
 ---
 
@@ -80,6 +81,12 @@ Bygga ett enkelt, tryggt och professionellt CV-verktyg primärt för deltagare i
 
 ### ➕ Tillägg utöver MVP – levererad 2026-03-15 → 2026-03-20
 - AI-assistans i CV-formulär (se avsnitt 15) – opt-in via toggle
+
+### ➕ Tillägg utöver MVP – levererad 2026-05-06 (v1.4)
+- Helhets-CV-feedback (avsnitt 15.5) — `/api/ai/cv-feedback`, synlig på preview-sidorna
+- Uppgraderade AI-prompts med kontextuell klyscha-regel (avsnitt 15.2)
+- `HowDoesThisWork`-mönster för transparens vid AI-funktioner (UX_PATTERNS §3)
+- UI-copy med vardagsspråk-underrubriker per CV-steg (UI_COPY §1–§5)
 
 ### ❌ Skjuts till V1.1
 - DOCX-export
@@ -488,7 +495,10 @@ Den auktoritativa, aktuella layouten finns i `CLAUDE.md` → "Project Structure"
 - [ ] Fler layouter med tvåkolumns-design (kräver ATS-granskning)
 - [ ] Personligt brev-funktion (som cv.se erbjuder)
 - [ ] Spara senaste jobbannons + nyckelordsmatchning per CV (idag är funktionen stateless)
-- [ ] Ska AI-toggle vara opt-in eller opt-out som default?
+- [x] Ska AI-toggle vara opt-in eller opt-out som default?
+- [ ] Helhets-CV-feedback för coach-vyn — ska coach kunna trigga AI-feedback på en deltagares CV inom ramen för `coach_links`-relation? Inte i v1.4 — utvärderas efter beta-data.
+
+> **Stängd 2026-05-06:** Opt-in behålls som default för AI-toggle. Skäl: AI kostar pengar, AF varnar uttryckligen för rena AI-genererade CV-texter, pedagogiskt rätt — deltagaren ska aktivt välja AI som verktyg. Beslutet dokumenterat i §15.2.
 
 ---
 
@@ -507,24 +517,67 @@ Den auktoritativa, aktuella layouten finns i `CLAUDE.md` → "Project Structure"
 | 2 | Beskrivningsförslag | `POST /api/ai/description` | jobbtitel + arbetsgivare + nuvarande beskrivning + språk | 3 punkter med starka verb i preteritum/past tense | Steg 3 (arbetslivserfarenhet) |
 | 3 | Kompetensförslag | `POST /api/ai/skills` | jobbtitlar + utbildning + befintliga kompetenser + språk | JSON-array med 6 specifika kompetenser (4 yrkesspecifika + 2 mjuka) | Steg 5 (kunskaper & färdigheter) |
 | 4 | Nyckelordsmatchning | `POST /api/ai/keywords` | `cvId` + jobbannons (fritext) + språk | JSON-array (max 8) med saknade nyckelord + sektionsförslag | ATS-panel / preview |
+| 5 | Helhets-CV-feedback | `POST /api/ai/cv-feedback` | `cvId` ELLER `guestData` + språk | JSON-array med 3–5 feedback-punkter, eller `[TIPS]`-meddelande om CV:t är för tunt | Steg 6 (preview-sidorna) |
+
+Helhets-feedbacken läser hela CV:t och returnerar 3–5 specifika observationer + förslag. Den är pedagogiskt designad: bulletpoints följs alltid av en inramning som påminner deltagaren att "AI:n ser mönster och formuleringar — den ser inte vem du är". Inga "Ersätt automatiskt"-knappar — deltagaren tar feedbacken och redigerar själv.
 
 ### 15.2 Designprinciper
 
-- **Opt-in:** AI är alltid avstängd som default. Användaren slår på den explicit.
-- **Förbjudna ord/fraser i prompts:** Vi blockerar fluffiga buzz-ord (driven, social, flexibel, passionerad, etc.) i profil-prompten för att undvika generisk text som rekryterare ratar.
-- **Nonsense-detektion:** Profil-endpointen returnerar ett `[TIPS]`-meddelande istället för att generera text om input är meningslös – inga fabricerade fakta.
+- **Opt-in:** AI är alltid avstängd som default. Användaren slår på den explicit. Detta beslut är **stängt** (se §14): tre skäl — AI kostar pengar, AF varnar uttryckligen för rena AI-genererade CV-texter, och pedagogiskt rätt — deltagaren ska aktivt välja AI som verktyg.
+- **Klyscha-regel (kontextuell):** Vi har en utökad lista med fluffiga buzz-ord (driven, lösningsorienterad, lagspelare, flexibel, engagerad, passionerad, ansvarstagande, motiverad, självgående, social, strukturerad, noggrann, prestigelös, resultatinriktad, kommunikativ, innovativ, dynamisk, proaktiv, team player, self-starter — full lista finns i `docs/v1.4/AI_PROMPTS_v1.md` och i koden under `lib/ai/forbidden-buzzwords.ts`). Reglen är **kontextuell, inte absolut**: orden får användas om deltagaren själv har gett ett konkret bevis i samma mening. "Driven av att lösa kniviga kundärenden" är OK; "Driven" ensamt är inte. Pedagogiskt rättare än absolut blockering.
+- **Nonsense-detektion:** Alla AI-endpoints returnerar ett `[TIPS]`-meddelande istället för att generera text om input är meningslös – inga fabricerade fakta.
 - **Aldrig hitta på fakta:** Prompts instruerar modellen att bara använda data som faktiskt finns i CV:t.
-- **Språkmedvetenhet:** Alla endpoints tar `language: 'sv' | 'en'` och svarar på rätt språk.
+- **AI-output är alltid ett utkast:** UI:t visar alltid ett "ett utkast — använd det på ditt sätt"-meddelande direkt vid AI-genererat innehåll. Ingen automatisk ersättning av deltagarens text utan deltagarens aktiva val.
+- **Språkmedvetenhet:** Alla endpoints tar `language: 'sv' | 'en'` och svarar på rätt språk. System-prompterna är språk-specifika (`SYSTEM_PROMPT_SV` / `SYSTEM_PROMPT_EN`) — inte en bilingual prompt som modellen får tolka.
 - **Felmeddelanden på svenska:** Vänliga, åtgärdsinriktade meddelanden. Kreditslut detekteras separat och berättar för användaren att tjänsten är tillfälligt otillgänglig.
-- **Dev-läge:** I dev-miljö visas en expanderbar panel med `systemPrompt` + `userPrompt` så vi kan iterera på prompt engineering.
+- **Dev-läge:** I dev-miljö visas en expanderbar panel med `systemPrompt` + `userPrompt` så vi kan iterera på prompt engineering. **I produktion utelämnas dessa fält ur API-svaret** — gating på `NODE_ENV !== 'production'` (säkerhetsfix från 2026-05-05).
 
 ### 15.3 Säkerhetsmodell
 
 - Inloggad jobbsökare: server hämtar CV via `getFullCV(cvId)` efter `auth.getUser()`-verifiering.
-- Coach: tillåten att anropa `/api/ai/keywords` för CV:n där `coach_links` matchar coach + CV-ägare.
+- Coach: tillåten att anropa `/api/ai/keywords` för CV:n där `coach_links` matchar coach + CV-ägare. Coach har INTE åtkomst till `/api/ai/cv-feedback` i v1.4 (utvärderas efter beta-data — se §14).
 - Gäst: payload måste innehålla `isGuest: true` eller `guestData` – ingen `cvId`-lookup, ingen DB-access.
 - API-nyckel (`ANTHROPIC_API_KEY`) är server-side only. Aldrig `NEXT_PUBLIC_*`.
+- Helhets-CV-feedback följer samma säkerhetsmodell som övriga endpoints.
 
 ### 15.4 Datamodell-konsekvenser
 
-Inga. AI är stateless: ingen ny tabell, ingen kolumnändring. Förslag visas i UI och användaren accepterar/avvisar manuellt. Eventuell historik (vad användaren accepterade) är en V1.1-fråga (se avsnitt 14).
+Inga nya tabeller. AI är stateless: förslag visas i UI och användaren accepterar/avvisar manuellt. Eventuell historik (vad användaren accepterade) är en V1.1-fråga (se avsnitt 14).
+
+`ai_request_log.route` CHECK-constraint utökades 2026-05-06 till att inkludera `'cv-feedback'` (migration `20260506_ai_request_log_cv_feedback.sql`) — inte en datamodelländring i strikt mening, bara en utvidgning av redan existerande tabells acceptansfält.
+
+### 15.5 Helhets-CV-feedback (`/api/ai/cv-feedback`)
+
+**Status:** Levererad 2026-05-06 i v1.4. **Modell:** Samma `claude-sonnet-4-6`. **Aktivering:** Synlig som knapp i Steg 6 (preview-sidorna), aktiv när AI-toggle är på och CV:t har minst grundläggande personuppgifter + en av profil/erfarenhet/utbildning ifylld.
+
+**Funktion:** Deltagaren klickar "Få ärlig feedback på mitt CV". AI:n läser hela CV-data-objektet och returnerar 3–5 konkreta observationer i JSON-format. Varje observation har:
+
+```typescript
+{
+  point: string  // "Konkret observation + förslag (max 2 meningar)"
+  section?: 'profile' | 'experience' | 'education' | 'skills' | 'general'
+}
+```
+
+**Pedagogisk inramning:** Under bulletpointsen visas alltid texten:
+
+> *"Du är experten på dig själv och din bransch. AI:n ser mönster och formuleringar — den ser inte vem du är. Använd punkterna ovan som en checklista, inte som ett facit. Det är du som sätter pricken över i:et."*
+
+**UI-knappar:** Endast `Kopiera feedbacken` och `Stäng`. INGEN "Ersätt automatiskt"-knapp — deltagaren ska aktivt redigera sitt CV själv baserat på feedbacken.
+
+**`[TIPS]`-fall:** Returneras om CV:t är nästan helt tomt eller innehåller uppenbar nonsens. Standardmeddelande: *"Det här CV:t verkar inte komplett. Fyll i lite mer innehåll så hjälper jag gärna till med en granskning."*
+
+**Säkerhet:** Ärver hela mönstret från övriga AI-endpoints. Ägarskap verifieras före anrop. Rate limit delas med övriga AI-routes (samma `AI_HOURLY_LIMIT = 50` per användare).
+
+**Forbidden-lista:** Helhets-feedbacken får (och ska) flagga klyschor från forbidden-listan om de förekommer i CV:t utan kontextuellt bevis. Det är en av de viktigaste sakerna deltagaren får feedback på.
+
+### 15.6 Detaljerad implementeringsreferens
+
+Följande dokument utgör implementeringsspec för v1.4-uppgraderingen och ligger sparade under `docs/v1.4/`:
+
+- `AI_PROMPTS_v1.md` — komplett prompt-text för alla 5 AI-endpoints, inklusive utökad forbidden-lista och kontextuell klyscha-regel
+- `UI_COPY_v1.md` — all UI-copy per CV-steg, inklusive helhets-feedback
+- `UX_PATTERNS_v1.md` — återanvändbara UX-mönster (en sak åt gången, vardagsspråk, "hur fungerar det här?", AI-utkast-meddelande)
+- `PRD_v1.4_DELTA.md` — pasta-källa för denna PRD-bump
+
+Dokumenten bygger på och respekterar befintlig PRD §15-arkitektur. De ändrar inga låsta beslut (modell, opt-in, säkerhetsmodell, rate limit).

@@ -118,23 +118,23 @@ Set the same env vars in Vercel → Project → Settings → Environment Variabl
 
 ---
 
-## v1.4 upgrade — in progress (started 2026-05-06)
+## v1.4 upgrade — shipped 2026-05-06
 
-**Spec sources** (saved under `docs/v1.4/` in PR 5):
-- `AI_PROMPTS_v1.md` — new system prompts for 4 existing routes + new `/api/ai/cv-feedback` endpoint
-- `UI_COPY_v1.md` — copy refresh per CV step + new feedback panel copy
-- `UX_PATTERNS_v1.md` — reusable UX patterns (HowDoesThisWork, AI utkast banner, etc.)
-- `PRD_v1.4_DELTA.md` — paste-ready PRD bump
+PRD bumped to v1.4. Spec sources archived under `docs/v1.4/`:
+- [`AI_PROMPTS_v1.md`](./docs/v1.4/AI_PROMPTS_v1.md) — system prompts for the 5 AI endpoints, including the new `/api/ai/cv-feedback`
+- [`UI_COPY_v1.md`](./docs/v1.4/UI_COPY_v1.md) — copy per CV step + feedback panel
+- [`UX_PATTERNS_v1.md`](./docs/v1.4/UX_PATTERNS_v1.md) — reusable patterns (`HowDoesThisWork`, AI utkast, vardagsspråk, opt-in)
+- [`PRD_v1.4_DELTA.md`](./docs/v1.4/PRD_v1.4_DELTA.md) — paste source for the PRD bump
 
-**PR sequence (push after each):**
+**Shipped:**
 
-- [ ] PR 1: `feat(ai): upgrade system prompts for profile/description/skills/keywords` — single bundled commit, four routes change identically, removes "prompt under utveckling" tags
-- [ ] PR 2: `feat(ai): add /api/ai/cv-feedback endpoint` — new types, Zod, rate-limit + input-cap registration, full route
-- [ ] PR 3: `feat(ux): cv-feedback UI on both preview pages + HowDoesThisWork`
-- [ ] PR 4: `refactor(ui): apply v1.4 copy + validation patterns to all 5 form steps`
-- [ ] PR 5: `docs: bump PRD to v1.4 + save spec files to docs/v1.4/`
+- [x] PR 1 — system prompts upgraded for profile/description/skills/keywords; forbidden-list centralised in `lib/ai/forbidden-buzzwords.ts`; klyscha-rule moved from absolute to contextual; "prompt under utveckling" badges removed (`03f8feb`)
+- [x] PR 2 — `/api/ai/cv-feedback` endpoint built; types added; CHECK-constraint migration applied to live DB; same security + rate-limit pattern as the other AI routes (`c8c6bd7`)
+- [x] PR 3 — `CVFeedbackPanel` on both preview pages; new shared `HowDoesThisWork` component (`8af520d`)
+- [x] PR 4 — copy refresh: step subtitles, field helpers, `HowDoesThisWork` on 3 AI buttons, Zod messages updated (`3d3e6bd`)
+- [x] PR 5 — PRD v1.4 bump + this README marker + spec archive (this commit)
 
-**Anti-Loop guard:** stop and report after 3 failed attempts on the same problem (per WORKFLOW.md).
+**Deferred from v1.4 (logged as follow-ups in `AUDIT.md`):** priority-ordered profile validation (UI_COPY §2.6), "ett utkast" banner after AI generation, AIToggle session-helper, footer disclaimer, step-5 sub-section helpers, first-time empty-state copy. Plus live AI smoke verification of all 5 routes on the deployed Preview before user-test traffic.
 
 ---
 
