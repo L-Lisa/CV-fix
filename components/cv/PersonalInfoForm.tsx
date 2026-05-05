@@ -109,9 +109,12 @@ export default function PersonalInfoForm({ cvId, initialData, onSave, nextHref, 
           <Input
             id="headline"
             className="mt-1"
-            placeholder="t.ex. Systemutvecklare, Undersköterska"
+            placeholder="t.ex. Undersköterska, Lagerarbetare, IT-tekniker"
             {...register('headline')}
           />
+          <p className="text-xs text-gray-500 mt-1">
+            Den roll du söker eller har — den syns under ditt namn på CV:t.
+          </p>
           <FieldError message={errors.headline?.message} />
         </div>
       </section>
@@ -133,6 +136,9 @@ export default function PersonalInfoForm({ cvId, initialData, onSave, nextHref, 
               placeholder="070 000 00 00"
               {...register('phone')}
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Med riktnummer, t.ex. 070-123 45 67
+            </p>
             <FieldError message={errors.phone?.message} />
           </div>
           <div>
@@ -146,6 +152,9 @@ export default function PersonalInfoForm({ cvId, initialData, onSave, nextHref, 
               placeholder="namn@exempel.se"
               {...register('email')}
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Använd en privat adress du har koll på — inte din nuvarande arbetsmejl.
+            </p>
             <FieldError message={errors.email?.message} />
           </div>
           <div>
@@ -156,6 +165,9 @@ export default function PersonalInfoForm({ cvId, initialData, onSave, nextHref, 
               placeholder="Stockholm"
               {...register('city')}
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Räcker med stad — du behöver inte skriva hela adressen.
+            </p>
             <FieldError message={errors.city?.message} />
           </div>
           <div>

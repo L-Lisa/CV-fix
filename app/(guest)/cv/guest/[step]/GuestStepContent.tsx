@@ -30,6 +30,15 @@ const STEP_LABELS: Record<ValidStep, string> = {
   5: 'Kunskaper & Färdigheter',
 }
 
+// Vardagsspråk-underrubriker per UI_COPY_v1.md §1–§5.
+const STEP_SUBTITLES: Record<ValidStep, string> = {
+  1: 'Vad rekryteraren behöver för att höra av sig till dig.',
+  2: 'Skriv kort om dig själv — vem du är, vad du kan, vart du är på väg.',
+  3: 'Lägg till de jobb som är mest relevanta för det du söker — du behöver inte ta med allt.',
+  4: 'Skola, kurser, yrkesutbildningar — det som är relevant för det du söker.',
+  5: 'Det du är bra på — verktyg, system, språk och allt däremellan.',
+}
+
 function ok(): SaveResult {
   return { success: true }
 }
@@ -90,9 +99,12 @@ export default function GuestStepContent({ step }: { step: ValidStep }) {
         labels={Object.values(STEP_LABELS)}
       />
 
-      <h2 className="text-xl font-semibold text-gray-900 mb-6">
+      <h2 className="text-xl font-semibold text-gray-900 mb-1">
         {STEP_LABELS[step]}
       </h2>
+      <p className="text-sm text-gray-500 mb-6">
+        {STEP_SUBTITLES[step]}
+      </p>
 
       {step === 1 && (
         <PersonalInfoForm

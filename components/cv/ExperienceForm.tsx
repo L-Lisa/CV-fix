@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { CVExperience } from '@/types'
 import { useAIMode } from '@/components/cv/AIToggle'
+import HowDoesThisWork from '@/components/shared/HowDoesThisWork'
 import { Wand2 } from 'lucide-react'
 import type { SaveResult, CVLanguage, AIDescriptionPayload, AIResult } from '@/types'
 
@@ -377,15 +378,22 @@ export default function ExperienceForm({ cvId, initialData, language = 'sv', isG
               <div className="flex items-center justify-between">
                 <Label htmlFor={`exp-desc-${index}`}>Beskrivning</Label>
                 {aiEnabled && (
-                  <button
-                    type="button"
-                    onClick={() => handleImproveDescription(index)}
-                    disabled={aiLoadingIdx[index]}
-                    className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 disabled:opacity-50"
-                  >
-                    <Wand2 className="h-3 w-3" />
-                    {aiLoadingIdx[index] ? 'Förbättrar…' : 'Förbättra'}
-                  </button>
+                  <div className="flex flex-col items-end gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleImproveDescription(index)}
+                      disabled={aiLoadingIdx[index]}
+                      className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 disabled:opacity-50"
+                    >
+                      <Wand2 className="h-3 w-3" />
+                      {aiLoadingIdx[index] ? 'Förbättrar…' : 'Förbättra'}
+                    </button>
+                    {index === 0 && (
+                      <HowDoesThisWork
+                        text="AI:n läser din nuvarande beskrivning och omformulerar den till 3 punkter med starka verb i dåtid. Du behåller alltid rätten att ändra eller behålla originalet — AI:n hittar inte på siffror eller resultat som inte finns i din text."
+                      />
+                    )}
+                  </div>
                 )}
               </div>
               <textarea

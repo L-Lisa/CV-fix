@@ -33,13 +33,17 @@ describe('personalInfoSchema', () => {
   it('rejects empty first_name', () => {
     const r = personalInfoSchema.safeParse({ ...valid, first_name: '' })
     expect(r.success).toBe(false)
-    if (!r.success) expect(r.error.issues[0].message).toBe('Förnamn krävs')
+    if (!r.success) {
+      expect(r.error.issues[0].message).toBe(
+        'Skriv ditt förnamn — det är det första rekryteraren ser.'
+      )
+    }
   })
 
   it('rejects empty last_name', () => {
     const r = personalInfoSchema.safeParse({ ...valid, last_name: '' })
     expect(r.success).toBe(false)
-    if (!r.success) expect(r.error.issues[0].message).toBe('Efternamn krävs')
+    if (!r.success) expect(r.error.issues[0].message).toBe('Skriv ditt efternamn.')
   })
 
   it('rejects phone shorter than 5 chars', () => {
@@ -113,7 +117,9 @@ describe('experienceSchema', () => {
     })
     expect(r.success).toBe(false)
     if (!r.success) {
-      expect(r.error.issues[0].message).toBe('Ange slutdatum eller markera som pågående')
+      expect(r.error.issues[0].message).toBe(
+        'Sätt ett slutdatum eller kryssa i "Jobbar här nu".'
+      )
     }
   })
 
@@ -127,7 +133,9 @@ describe('experienceSchema', () => {
     })
     expect(r.success).toBe(false)
     if (!r.success) {
-      expect(r.error.issues[0].message).toBe('Slutdatum kan inte vara före startdatum')
+      expect(r.error.issues[0].message).toBe(
+        'Slutdatum kan inte vara innan startdatum — kontrollera datumen.'
+      )
     }
   })
 
@@ -143,7 +151,11 @@ describe('experienceSchema', () => {
   it('rejects empty job_title', () => {
     const r = experienceSchema.safeParse({ ...valid, job_title: '' })
     expect(r.success).toBe(false)
-    if (!r.success) expect(r.error.issues[0].message).toBe('Jobbtitel krävs')
+    if (!r.success) {
+      expect(r.error.issues[0].message).toBe(
+        'Skriv en jobbtitel — det är så rekryteraren känner igen rollen.'
+      )
+    }
   })
 })
 
@@ -188,7 +200,7 @@ describe('skillSchema', () => {
   it('rejects empty name', () => {
     const r = skillSchema.safeParse({ category: 'technical', name: '', level: 4 })
     expect(r.success).toBe(false)
-    if (!r.success) expect(r.error.issues[0].message).toBe('Namn krävs')
+    if (!r.success) expect(r.error.issues[0].message).toBe('Skriv namnet på färdigheten.')
   })
 
   it('rejects level outside 1-5', () => {

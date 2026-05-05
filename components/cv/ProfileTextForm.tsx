@@ -9,6 +9,7 @@ import { saveProfileText } from '@/lib/actions/cv'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import AIToggle, { useAIMode } from '@/components/cv/AIToggle'
+import HowDoesThisWork from '@/components/shared/HowDoesThisWork'
 import { Sparkles } from 'lucide-react'
 import type { SaveResult, CVLanguage, AIProfilePayload, AIResult } from '@/types'
 
@@ -135,7 +136,7 @@ export default function ProfileTextForm({ cvId, initialSummary, language = 'sv',
           </p>
 
           {aiEnabled && (
-            <div className="mb-3">
+            <div className="mb-3 space-y-2">
               <Button
                 type="button"
                 variant="outline"
@@ -147,6 +148,12 @@ export default function ProfileTextForm({ cvId, initialSummary, language = 'sv',
                 <Sparkles className="h-4 w-4" />
                 {aiLoading ? 'Genererar…' : 'Generera förslag'}
               </Button>
+              <p className="text-xs text-gray-500">
+                AI:n använder det du redan fyllt i som underlag. Du kan ändra fritt efteråt.
+              </p>
+              <HowDoesThisWork
+                text="AI:n läser det du redan fyllt i (yrkesroll, erfarenhet, utbildning) och föreslår en 3-meningars profiltext. Du kan ändra fritt eller skriva om från grunden — texten är ett utgångsläge, inte ett facit. Inget av ditt CV sparas av AI-tjänsten."
+              />
             </div>
           )}
 

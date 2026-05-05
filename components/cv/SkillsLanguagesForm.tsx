@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { CVSkill, CVLanguageEntry, CVHobbies, CVVolunteering, CVOther, SaveResult, CVLanguage, AISkillsPayload, AIResult } from '@/types'
 import { useAIMode } from '@/components/cv/AIToggle'
+import HowDoesThisWork from '@/components/shared/HowDoesThisWork'
 import { Wand2 } from 'lucide-react'
 
 interface Props {
@@ -359,16 +360,24 @@ export default function SkillsLanguagesForm({
             + Lägg till färdighet
           </Button>
           {aiEnabled && (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={aiSkillsLoading}
-              onClick={handleSuggestSkills}
-              className="flex items-center gap-1 text-purple-600 border-purple-200 hover:bg-purple-50 disabled:opacity-50"
-            >
-              <Wand2 className="h-4 w-4" />
-              {aiSkillsLoading ? 'Föreslår…' : 'Föreslå med AI'}
-            </Button>
+            <div className="flex flex-col items-start gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={aiSkillsLoading}
+                onClick={handleSuggestSkills}
+                className="flex items-center gap-1 text-purple-600 border-purple-200 hover:bg-purple-50 disabled:opacity-50"
+              >
+                <Wand2 className="h-4 w-4" />
+                {aiSkillsLoading ? 'Föreslår…' : 'Föreslå med AI'}
+              </Button>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                AI:n föreslår 6 kompetenser baserat på dina jobb och utbildningar. Välj de som faktiskt stämmer in på dig.
+              </p>
+              <HowDoesThisWork
+                text="AI:n läser dina jobbtitlar och utbildningar och föreslår 6 kompetenser — inga som du redan har i listan. Klicka för att lägga till de som stämmer; hoppa över de som inte gör det. Förslagen är ett utgångsläge, du sätter slutet."
+              />
+            </div>
           )}
         </div>
 
