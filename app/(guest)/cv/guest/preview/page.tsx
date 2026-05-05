@@ -171,25 +171,18 @@ export default function GuestPreviewPage() {
 
         <hr className="border-gray-100" />
 
-        {/* Save + sign up CTA */}
+        {/* Beta-mode reminder — PRD §6.3 calls for a guest warning at the
+            export point. While login is disabled (testversion) we replace
+            the post-MVP "create account to save" CTA so we don't contradict
+            the landing-page promise that no information is saved. */}
         <div className="bg-amber-50 rounded-lg p-4">
           <p className="text-sm font-semibold text-amber-900">
-            Spara ditt CV permanent
+            Detta är en testversion
           </p>
           <p className="text-sm text-amber-800 mt-1">
-            Ditt CV finns bara i den här webbläsaren just nu. Skapa ett konto
-            för att spara det, redigera det senare och använda det med en coach.
+            Ditt CV finns endast i den här webbläsaren just nu. Ingen
+            information sparas hos oss.
           </p>
-          <div className="mt-3 flex gap-3">
-            <Link href="/register">
-              <Button size="sm">Skapa konto och spara</Button>
-            </Link>
-            <Link href="/login">
-              <Button variant="outline" size="sm">
-                Logga in
-              </Button>
-            </Link>
-          </div>
         </div>
       </div>
 
