@@ -135,10 +135,13 @@ Språk: ${langLines || 'inga'}`
     // refusal). Pull the first text block if any.
     const textBlock = message.content.find((b) => b.type === 'text')
     const text = textBlock?.type === 'text' ? textBlock.text.trim() : ''
-    const result: AIResult = {
-      result: text,
-      systemPrompt: SYSTEM_PROMPT,
-      userPrompt,
+    const result: AIResult = { result: text }
+    // Dev-only: surface prompts so the form's expandable panel can render
+    // them. Never include in production responses — that would leak our
+    // prompt engineering to anyone who opens devtools (PRD §15.2).
+    if (process.env.NODE_ENV !== 'production') {
+      result.systemPrompt = SYSTEM_PROMPT
+      result.userPrompt = userPrompt
     }
     return NextResponse.json(result)
   } catch (e) {

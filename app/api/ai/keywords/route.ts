@@ -110,10 +110,10 @@ ${jobPosting.slice(0, 3000)}`
 
     const textBlock = message.content.find((b) => b.type === 'text')
     const text = textBlock?.type === 'text' ? textBlock.text.trim() : ''
-    const result: AIResult = {
-      result: text,
-      systemPrompt: SYSTEM_PROMPT,
-      userPrompt,
+    const result: AIResult = { result: text }
+    if (process.env.NODE_ENV !== 'production') {
+      result.systemPrompt = SYSTEM_PROMPT
+      result.userPrompt = userPrompt
     }
     return NextResponse.json(result)
   } catch (e) {
