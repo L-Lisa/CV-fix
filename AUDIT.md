@@ -302,3 +302,45 @@ Each case lists the spec source, the expected behaviour given the v1.4 prompt st
 - **`prompt_caching` not enabled:** PRD §15 mentions caching as a known cost-optimisation pending. With prompts now ~2-3× longer (forbidden list inlined), the case for caching strengthens. Not blocking; track for v1.5.
 
 **Validation performed:** `tsc --noEmit` clean, `eslint . --ext .ts,.tsx` clean (0 errors, 0 warnings), `next build` succeeds, `npm test` 125 / 125 pass. Grep confirmed all 7 "prompt under utveckling" / "under utveckling" tag instances removed from user-facing surfaces.
+
+### 2026-05-06 — `03f8feb..HEAD` — v1.4 PR 2: /api/ai/cv-feedback endpoint
+
+**Scope:** 1 commit. Builds the new full-CV-feedback endpoint per `docs/v1.4/AI_PROMPTS_v1.md` §6 and `PRD_v1.4_DELTA.md` §15.5. Adds the type triplet (`AICVFeedbackPayload`, `AICVFeedbackPoint`, `AICVFeedbackResult`, plus `AICVFeedbackSection`) to `types/index.ts`. Extends `AIRoute` in `lib/ai/rate-limit.ts` to include `'cv-feedback'`. Migration `20260506_ai_request_log_cv_feedback.sql` extends the `ai_request_log.route` CHECK constraint to accept the new value. New route at `app/api/ai/cv-feedback/route.ts` follows the established pattern: input cap on guest payload → auth/getFullCV/ownership-check or guestData direct → rate limit (auth path only, shared 50/h bucket) → Anthropic call → parsed structured result. Server parses the AI response into either a `[TIPS]` string or a typed `AICVFeedbackPoint[]` so the client doesn't deal with raw JSON.
+
+**Files read in full / created:** `lib/ai/limits.ts`, `lib/ai/rate-limit.ts`, `supabase/migrations/20260504_ai_request_log.sql` (to find the CHECK constraint name), `types/index.ts` (around line 240), `lib/guest/storage.ts` (to verify GuestCV shape that AICVFeedbackPayload's guestData mirrors), `docs/v1.4/AI_PROMPTS_v1.md` §6, `docs/v1.4/PRD_v1.4_DELTA.md` §15.5. Created: `supabase/migrations/20260506_ai_request_log_cv_feedback.sql`, `app/api/ai/cv-feedback/route.ts`.
+
+**Result: No critical bugs found.**
+
+**Trace highlights:**
+- **Migration applied to live DB** via `supabase db push`. Existing rows have route values in the old set, all of which remain valid. `types/database.ts` regenerated and verified byte-identical (CHECK constraints don't surface in generated TS types — same observation as the layout=4 migration).
+- **Security model mirrors `/api/ai/keywords`:** auth flow does `auth.getUser()` → `getFullCV(cvId)` → `fullCV.cv.user_id !== user.id` → 403. Guest flow accepts `guestData` directly with no DB access. Coach access is NOT granted (per `PRD_v1.4_DELTA.md` §15.3 — coach-driven feedback is V1.5 evaluation).
+- **Rate limit shared bucket:** route registers as `'cv-feedback'` and counts against the same 50/h-per-user `ai_request_log` bucket as the other four routes. Guest path is not rate-limited (matches existing pattern; CLAUDE.md acknowledges this exposure with IP-based-cap mentioned as the future escalation).
+- **Input cap reuses existing `MAX_INPUT` keys** (`currentSummary` for `guestData.profile`, `headline` for `guestData.personalInfo.headline`). Auth path uses RLS-trusted DB data and skips the cap (data was capped at write-time by the form's own validation).
+- **Server-side response parsing:** `parseFeedback()` returns either the `[TIPS]` string verbatim, a typed `AICVFeedbackPoint[]`, or `null` on parse failure. `null` becomes a 502 with friendly Swedish error. Section validation against an explicit `VALID_SECTIONS` allow-list — unknown section values are dropped silently rather than rejecting the whole response.
+- **Dev-mode prompt return** gated on `NODE_ENV !== 'production'` (consistent with the post-3e7a7bd state of the other four routes). Production responses do not leak the new prompts.
+
+**Smoke-test cases — structural review (live AI verification pending):**
+
+`/api/ai/cv-feedback` — spec §6.6:
+
+| # | Case | Expected | Structural assessment |
+|---|---|---|---|
+| 1 | Complete CV with reasonable data | 3–5 concrete points as JSON array; no invented facts | Passed — rule 1 (3-to-5), rule 6 (no inventions), rule 11 (raw JSON only) |
+| 2 | CV with obvious clichés ("driven IT-konsult") | A flagging point about the cliché | Borderline — rule 9 explicit but model may over-or-under-flag; live verification needed |
+| 3 | CV without work experience | A point that says it plainly | Passed — rule 10 explicit ("säg det rakt ut") |
+| 4 | Empty CV | `[TIPS]` response | Passed — Choose to return [TIPS] branch covers near-empty case |
+| 5 | Prompt injection in profile text | `[TIPS]` response | Passed — Choose to return [TIPS] branch lists prompt injection explicitly |
+| 6 | Model returns malformed JSON | 502 with Swedish error | Passed — `parseFeedback()` returns null, route returns 502 with `'AI-tjänsten gav inget tolkbart svar. Försök igen.'` |
+| 7 | Model returns object instead of array | 502 with same error | Passed — `parseFeedback()` rejects non-arrays |
+| 8 | Model returns array with non-object items | Items dropped, others kept; if all dropped, 502 | Passed — per-item validation, returns null only if zero valid items |
+| 9 | Auth path with foreign cvId | 403 | Passed — ownership check identical to other AI routes |
+| 10 | Guest path with oversized profile (>5KB) | 413 | Passed — `findOversizedField` reuses `currentSummary` cap |
+
+**Notes for follow-up (non-blocking):**
+
+- **Live AI verification before user testing** — same as PR 1. All "Borderline" cases need a real AI call to validate model adherence to the contextual klyscha rule. Particularly case #2 (cliché flagging) — if the model under-flags, we lose the v1.4 promise; if it over-flags, feedback gets noisy.
+- **Coach access deliberately excluded** — `PRD_v1.4_DELTA.md` §15.3 closes this for v1.4. If coaches request the feature post-pilot, the existing `/api/ai/keywords` coach branch is a clear template.
+- **`max_tokens: 800`** chosen for cv-feedback (vs 600 for the other routes) because 5 points × ~2 sentences each can land at ~600 output tokens. Tune from telemetry once we see real usage.
+- **JSON parsing is server-side** here, unlike the existing `keywords` and `skills` routes that return raw text and let the client parse. Justified for cv-feedback because the result type promises structured points; it's also a small UX win — the client gets a clean array straight from `result.result`.
+
+**Validation performed:** `tsc --noEmit` clean, `eslint .` clean, `next build` succeeds, `npm test` 125 / 125. Migration applied to live DB cleanly. `types/database.ts` regenerated and verified unchanged.

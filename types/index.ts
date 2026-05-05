@@ -253,3 +253,62 @@ export interface AIResult {
   userPrompt?: string   // dev mode: visible in expandable panel
   error?: string
 }
+
+// ─── AI: full-CV feedback (v1.4) ─────────────────────────────────────────────
+
+export type AICVFeedbackSection =
+  | 'profile'
+  | 'experience'
+  | 'education'
+  | 'skills'
+  | 'general'
+
+export interface AICVFeedbackPoint {
+  point: string
+  section?: AICVFeedbackSection
+}
+
+export interface AICVFeedbackPayload {
+  language: 'sv' | 'en'
+  cvId?: string
+  isGuest?: boolean
+  // Guest path: minimal subset of GuestCV needed by the prompt. Defined
+  // inline to avoid a circular import (lib/guest/storage imports from
+  // this module). The shape is what /api/ai/cv-feedback's user prompt
+  // serialises into the message — extending it later is cheap.
+  guestData?: {
+    personalInfo: {
+      first_name: string | null
+      last_name: string | null
+      headline: string | null
+      city: string | null
+    } | null
+    profile: string | null
+    experiences: Array<{
+      job_title: string | null
+      employer: string | null
+      description: string | null
+      start_year: number | null
+      end_year: number | null
+      is_current: boolean
+    }>
+    educations: Array<{
+      program: string | null
+      institution: string | null
+      start_year: number | null
+      end_year: number | null
+      is_current: boolean
+    }>
+    skills: Array<{ name: string | null }>
+    languages: Array<{ language: string | null; level: string | null }>
+  }
+}
+
+// Result is structured on success: parsed JSON array, or a [TIPS] string
+// when the model takes the [TIPS] branch. error is populated on failure.
+export interface AICVFeedbackResult {
+  result: AICVFeedbackPoint[] | string
+  systemPrompt?: string
+  userPrompt?: string
+  error?: string
+}

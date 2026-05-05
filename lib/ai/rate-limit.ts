@@ -10,7 +10,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-export type AIRoute = 'profile' | 'description' | 'skills' | 'keywords'
+export type AIRoute = 'profile' | 'description' | 'skills' | 'keywords' | 'cv-feedback'
 
 // 50 calls/hour covers normal CV editing (≈10/hr) with a 5× margin and
 // realistic coach review workloads (≈30/hr for a multi-participant session).
