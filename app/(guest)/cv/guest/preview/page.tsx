@@ -7,6 +7,7 @@ import { validateCV } from '@/lib/ats/validate'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import LayoutPicker from '@/components/cv/LayoutPicker'
+import CVFeedbackPanel from '@/components/cv/CVFeedbackPanel'
 import type { CVLayout } from '@/types'
 
 export default function GuestPreviewPage() {
@@ -103,6 +104,43 @@ export default function GuestPreviewPage() {
           onAccentChange={handleAccentChange}
         />
       </div>
+
+      {/* Full-CV feedback (v1.4) */}
+      <CVFeedbackPanel
+        mode="guest"
+        language={guestCV.language}
+        guestData={{
+          personalInfo: guestCV.personalInfo
+            ? {
+                first_name: guestCV.personalInfo.first_name ?? null,
+                last_name: guestCV.personalInfo.last_name ?? null,
+                headline: guestCV.personalInfo.headline ?? null,
+                city: guestCV.personalInfo.city ?? null,
+              }
+            : null,
+          profile: guestCV.profile,
+          experiences: guestCV.experiences.map((e) => ({
+            job_title: e.job_title ?? null,
+            employer: e.employer ?? null,
+            description: e.description ?? null,
+            start_year: e.start_year ?? null,
+            end_year: e.end_year ?? null,
+            is_current: e.is_current ?? false,
+          })),
+          educations: guestCV.educations.map((e) => ({
+            program: e.program ?? null,
+            institution: e.institution ?? null,
+            start_year: e.start_year ?? null,
+            end_year: e.end_year ?? null,
+            is_current: e.is_current ?? false,
+          })),
+          skills: guestCV.skills.map((s) => ({ name: s.name ?? null })),
+          languages: guestCV.languages.map((l) => ({
+            language: l.language ?? null,
+            level: l.level ?? null,
+          })),
+        }}
+      />
 
       {/* ATS results */}
       {(hard.length > 0 || soft.length > 0) && (

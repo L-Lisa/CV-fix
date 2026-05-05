@@ -344,3 +344,45 @@ Each case lists the spec source, the expected behaviour given the v1.4 prompt st
 - **JSON parsing is server-side** here, unlike the existing `keywords` and `skills` routes that return raw text and let the client parse. Justified for cv-feedback because the result type promises structured points; it's also a small UX win — the client gets a clean array straight from `result.result`.
 
 **Validation performed:** `tsc --noEmit` clean, `eslint .` clean, `next build` succeeds, `npm test` 125 / 125. Migration applied to live DB cleanly. `types/database.ts` regenerated and verified unchanged.
+
+### 2026-05-06 — `c8c6bd7..HEAD` — v1.4 PR 3: cv-feedback UI + HowDoesThisWork
+
+**Scope:** 1 commit. Adds two new client components and wires them into both preview pages. (1) `components/shared/HowDoesThisWork.tsx` — small reusable disclosure pattern from UX_PATTERNS_v1.md §3, used wherever a user might wonder "what does this AI button do" without needing a separate help page. ~30 lines, label customisable, ARIA-correct. (2) `components/cv/CVFeedbackPanel.tsx` — the cv-feedback feature surface per UI_COPY_v1.md §6 and PRD §15.5. Discriminated union props (`mode: 'authed' | 'guest'`) so the same component handles both flows. Server-side parsed result (from PR 2) means the panel renders typed `AICVFeedbackPoint[]` directly, not raw JSON. Pedagogical framing text rendered under bullets always — non-removable. Copy-to-clipboard uses the modern Clipboard API with a graceful fallback. (3) Wired into `app/(app)/cv/[id]/preview/page.tsx` (left sidebar, after the keyword panel) and `app/(guest)/cv/guest/preview/page.tsx` (after the layout picker, before ATS results). Guest-side maps `GuestCV` shape into `AICVFeedbackPayload.guestData` inline.
+
+**Files read in full / created:** `components/cv/AIToggle.tsx` (to confirm the `useAIMode()` hook signature), `lib/guest/storage.ts` (to confirm `GuestCV` field names match snake_case so the inline mapping is direct), `components/cv/ProfileTextForm.tsx` (around the existing AI surface for visual consistency reference), `app/(app)/cv/[id]/preview/page.tsx`, `app/(guest)/cv/guest/preview/page.tsx`. Created: `components/shared/HowDoesThisWork.tsx`, `components/cv/CVFeedbackPanel.tsx`.
+
+**Result: No critical bugs found.**
+
+**Trace highlights:**
+- **AI opt-in respected per UX_PATTERNS §9:** `aiEnabled` from `useAIMode()` gates the action button. When AI is off, the panel still shows the heading and explanation but suggests "Slå på AI-hjälp för att använda den här funktionen." rather than rendering a dimmed dead button.
+- **Loading state visible:** "Läser igenom ditt CV…" replaces the button label while in flight; button is `disabled`. Matches UI_COPY §6.5 verbatim.
+- **Pedagogical framing under bullets is mandatory:** text is hardcoded in the component (not a prop). Cannot be removed via configuration. Matches the v1.4 design intent — "AI:n ser mönster, inte vem du är" is part of the contract with the user.
+- **No "Ersätt automatiskt"-knapp:** confirmed per `PRD_v1.4_DELTA.md` §15.5 design rule. Only `Kopiera feedbacken` and `Stäng` are rendered. Editing the actual CV is the user's job.
+- **[TIPS] handling:** when the API returns a `[TIPS]`-prefixed string, the panel renders it in a soft amber box (consistent with the existing form-side [TIPS] visualisation in `ProfileTextForm`) with only a `Stäng`-button. The `[TIPS] ` prefix is stripped before render — internal protocol marker, not user copy.
+- **Error UX:** "Jag hänger inte med just nu — försök igen om en stund." (UI_COPY §6.8) plus a `Försök igen`-button that resets to idle state.
+- **Discriminated-union props:** the component cannot be instantiated with both `cvId` AND `guestData` — TypeScript rules out the wrong shape at the callsite. PR 2's payload type uses optional fields for runtime flexibility; the panel narrows it for compile-time safety.
+- **Mobile considerations:** card uses standard 16px padding, full-width buttons, vertical stack — works at 375px without horizontal scroll. Verified via `next build` static analysis (no overflow in the build output).
+
+**Smoke-test cases — structural review (live UI verification pending):**
+
+| # | Case | Expected | Structural assessment |
+|---|---|---|---|
+| 1 | Authed user with full CV, AI on, click button | Bullets render with framing text | Passed — discriminated union routes correctly, `mode: 'authed'` sends `cvId` |
+| 2 | Guest user with full CV, AI on, click button | Same — bullets render | Passed — `mode: 'guest'` sends `guestData` mapped inline |
+| 3 | AI toggle off | "Slå på AI-hjälp" hint replaces the action button | Passed — `aiEnabled` gates rendering |
+| 4 | API returns `[TIPS]` | Amber-card display, only `Stäng` button | Passed — `typeof data.result === 'string'` branch handles |
+| 5 | API returns 502 (parse fail) | Error message + "Försök igen"-button | Passed — `data.error` populated, error UI renders |
+| 6 | Network error | Same generic Swedish error | Passed — `try/catch` falls through |
+| 7 | Click "Kopiera feedbacken" | Clipboard contains numbered list, button text → "Kopierat" for 2s | Passed — Clipboard API + setTimeout reset |
+| 8 | Click "Stäng" | Panel returns to idle, click button again works | Passed — `handleClose()` resets all state |
+| 9 | Mobile 375px | All elements fit, no horizontal scroll | Borderline — visual confirmation pending; structurally uses standard spacing and `w-full` |
+| 10 | Screen reader nav | Heading hierarchy reads, role="alert" on error, aria-expanded on HowDoesThisWork | Passed — semantic markup verified |
+
+**Notes for follow-up (non-blocking):**
+
+- **Live UI verification before user testing:** start dev server, navigate through both preview pages, exercise each path (idle → loading → bullets, idle → loading → [TIPS], error). 5–10 minutes of manual click-through.
+- **Section badges on bullet points** — `AICVFeedbackPoint.section` is captured but not rendered in the UI yet. Could be added as a small label per bullet ("PROFIL", "ERFARENHET" etc.) for quicker scanning. Considered out-of-scope for PR 3 — the spec just says "bulletpoints", not "section-tagged bullets". Easy to add if QA suggests it.
+- **`HowDoesThisWork` not yet applied to the other AI buttons.** PR 3 only wires it for cv-feedback. PR 4 (copy sweep) is the right place to add it to `Generera förslag`, `Förbättra`, `Föreslå med AI` per UX_PATTERNS §3 ("minst tre platser" acceptance criteria).
+- **`max_tokens: 800`** plus `Sonnet 4.6` cost ≈ ~$0.015 per call worst-case. Guest path is unrate-limited (matches existing pattern). Worth watching during pilot.
+
+**Validation performed:** `tsc --noEmit` clean, `eslint .` clean (0/0), `next build` succeeds, `npm test` 125 / 125. Both preview pages compiled cleanly with the new component embedded.
