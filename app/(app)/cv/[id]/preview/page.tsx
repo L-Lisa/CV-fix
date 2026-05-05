@@ -6,7 +6,7 @@ import { getFullCV } from '@/lib/queries/cv'
 import { getCommentsForCV } from '@/lib/queries/coach'
 import { validateCV } from '@/lib/ats/validate'
 import ATSPanel from '@/components/cv/ATSPanel'
-import LayoutPicker from '@/components/cv/LayoutPicker'
+import AuthedLayoutPicker from '@/components/cv/AuthedLayoutPicker'
 import LanguageToggle from '@/components/cv/LanguageToggle'
 import CoachCommentsPanel from '@/components/cv/CoachCommentsPanel'
 import KeywordMatchPanel from '@/components/cv/KeywordMatchPanel'
@@ -91,7 +91,7 @@ export default async function PreviewPage({
           {/* Layout selector */}
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <p className="text-sm font-semibold text-gray-700 mb-3">Välj layout</p>
-            <LayoutPicker
+            <AuthedLayoutPicker
               cvId={params.id}
               activeLayout={activeLayout}
               accentColor={accentColor}

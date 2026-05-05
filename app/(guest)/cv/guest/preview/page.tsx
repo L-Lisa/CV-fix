@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { loadGuestCV, assembleGuestFullCV, type GuestCV } from '@/lib/guest/storage'
+import { loadGuestCV, saveGuestCV, assembleGuestFullCV, type GuestCV } from '@/lib/guest/storage'
 import { validateCV } from '@/lib/ats/validate'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import LayoutPicker from '@/components/cv/LayoutPicker'
+import type { CVLayout } from '@/types'
 
 export default function GuestPreviewPage() {
   const [guestCV, setGuestCV] = useState<GuestCV | null>(null)
@@ -15,6 +17,20 @@ export default function GuestPreviewPage() {
   useEffect(() => {
     setGuestCV(loadGuestCV())
   }, [])
+
+  function handleLayoutChange(layout: CVLayout) {
+    if (!guestCV) return
+    const next = { ...guestCV, layout }
+    setGuestCV(next)
+    saveGuestCV(next)
+  }
+
+  function handleAccentChange(accentColor: string) {
+    if (!guestCV) return
+    const next = { ...guestCV, accentColor }
+    setGuestCV(next)
+    saveGuestCV(next)
+  }
 
   if (!guestCV) {
     return (
@@ -75,6 +91,17 @@ export default function GuestPreviewPage() {
           {guestCV.title}
         </h1>
         <p className="text-sm text-gray-500 mt-0.5">Förhandsvisning av gäst-CV</p>
+      </div>
+
+      {/* Layout picker — Layout 4 (Harvard / Ivy League) needs this to be reachable */}
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <p className="text-sm font-semibold text-gray-700 mb-3">Välj layout</p>
+        <LayoutPicker
+          activeLayout={guestCV.layout}
+          accentColor={guestCV.accentColor}
+          onLayoutChange={handleLayoutChange}
+          onAccentChange={handleAccentChange}
+        />
       </div>
 
       {/* ATS results */}

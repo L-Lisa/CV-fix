@@ -1,8 +1,6 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { updateCVSettings } from '@/lib/actions/cv'
 import type { CVLayout } from '@/types'
 
 const LAYOUTS: Array<{ value: CVLayout; label: string; description: string }> = [
@@ -22,31 +20,43 @@ const PRESET_COLORS = [
 ]
 
 interface Props {
-  cvId: string
   activeLayout: CVLayout
   accentColor: string
+  // Persistence is the caller's job — authed callsite writes to Supabase
+  // via updateCVSettings + router.refresh; guest callsite writes to
+  // localStorage. Async return is awaited for pending-state UX.
+  onLayoutChange: (layout: CVLayout) => void | Promise<void>
+  onAccentChange: (accent: string) => void | Promise<void>
 }
 
-export default function LayoutPicker({ cvId, activeLayout, accentColor }: Props) {
-  const router = useRouter()
+export default function LayoutPicker({
+  activeLayout,
+  accentColor,
+  onLayoutChange,
+  onAccentChange,
+}: Props) {
   const [pending, setPending] = useState(false)
   const [localColor, setLocalColor] = useState(accentColor)
 
   async function handleSelectLayout(layout: CVLayout) {
     if (layout === activeLayout || pending) return
     setPending(true)
-    await updateCVSettings(cvId, layout, localColor)
-    router.refresh()
-    setPending(false)
+    try {
+      await onLayoutChange(layout)
+    } finally {
+      setPending(false)
+    }
   }
 
   async function handleColorChange(color: string) {
     if (color === localColor || pending) return
     setLocalColor(color)
     setPending(true)
-    await updateCVSettings(cvId, activeLayout, color)
-    router.refresh()
-    setPending(false)
+    try {
+      await onAccentChange(color)
+    } finally {
+      setPending(false)
+    }
   }
 
   return (
